@@ -1,19 +1,11 @@
-version: '3.8'
-
 services:
   front:
     build: 
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     container_name: helpcopies_front
     restart: unless-stopped
-    ports:
-      - "${FRONT_PORT:-3001}:3000"
     environment:
       - PORT=3000
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:5002}
-    volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
-    command: pnpm run dev
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.helpcopies.com/api}
