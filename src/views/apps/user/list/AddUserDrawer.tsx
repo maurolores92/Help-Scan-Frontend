@@ -547,7 +547,8 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
                     type={showPassword ? 'text' : 'password'}
                     value={value}
                     sx={{ mb: 4 }}
-                    label='Contraseña'
+                    label={isPasswordMode ? 'Nueva Contraseña' : 'Contraseña'}
+                    placeholder='············'
                     onChange={onChange}
                     error={Boolean(errors.password)}
                     {...(errors.password && { helperText: errors.password?.message })}
@@ -572,7 +573,8 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={value}
                     sx={{ mb: 6 }}
-                    label='Confirmar Contraseña'
+                    label={isPasswordMode ? 'Confirmar Nueva Contraseña' : 'Confirmar Contraseña'}
+                    placeholder='············'
                     onChange={onChange}
                     error={Boolean(errors.confirmPassword)}
                     {...(errors.confirmPassword && { helperText: errors.confirmPassword?.message })}
@@ -593,7 +595,7 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
 
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Button type='submit' variant='contained' sx={{ mr: 3 }}>
-              {isPasswordMode || editData ? 'Editar' : 'Crear'}
+              {isPasswordMode ? 'Actualizar Contraseña' : editData ? 'Guardar Cambios' : 'Crear'}
             </Button>
             <Button variant='tonal' color='secondary' onClick={handleClose}>
               Cancelar

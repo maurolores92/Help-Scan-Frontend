@@ -62,6 +62,7 @@ const statusLabelMap: Record<string, string> = {
 const UserProfileHeader = () => {
   const { user, setUser } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
 
@@ -291,14 +292,22 @@ const UserProfileHeader = () => {
               </Box>
             </Box>
 
-            {/* Acciones: chip de estado + botón editar */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+            {/* Acciones: chip de estado + cambiar contraseña + botón editar */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, flexWrap: 'wrap' }}>
               <Chip
                 label={statusLabelMap[userStatus ?? ''] ?? 'Activo'}
                 color={statusColorMap[userStatus ?? ''] ?? 'success'}
                 size='small'
                 sx={{ fontWeight: 600 }}
               />
+              <Button
+                variant='outlined'
+                color='secondary'
+                startIcon={<Icon icon='tabler:key' fontSize='1rem' />}
+                onClick={() => setPasswordModalOpen(true)}
+              >
+                Cambiar Contraseña
+              </Button>
               <Button
                 variant='contained'
                 startIcon={<Icon icon='tabler:pencil' fontSize='1rem' />}
@@ -384,6 +393,14 @@ const UserProfileHeader = () => {
             image: updated.image || null
           })
         }}
+      />
+
+      {/* Modal para cambiar contraseña */}
+      <AddUserDrawer
+        open={passwordModalOpen}
+        toggle={() => setPasswordModalOpen(false)}
+        editData={editData}
+        isPasswordMode
       />
     </>
   )

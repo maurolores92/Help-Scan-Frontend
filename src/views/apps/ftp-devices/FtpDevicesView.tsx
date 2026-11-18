@@ -184,11 +184,6 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                 <strong>Diagnóstico de conexión FTP:</strong> {serverInfo.error}
               </Alert>
             )}
-            <Typography variant='body2' color='text.secondary'>
-              Host: <strong>{serverInfo?.host || 'ftp.helpcopies.com'}</strong> • SFTP:{' '}
-              <strong>{serverInfo?.sftpPort || 2222}</strong> • FTPS/FTP:{' '}
-              <strong>{serverInfo?.ftpsPort || 21}</strong> • Carpeta raíz virtual: <strong>/</strong>
-            </Typography>
             <Typography variant='caption' color='text.secondary'>
               Cada impresora HP escribe únicamente en su propia subcarpeta de <code>inbox/</code> mediante usuario
               chrooted sin permisos de lectura o borrado en la bóveda.
