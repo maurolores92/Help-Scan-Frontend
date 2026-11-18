@@ -70,7 +70,9 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
   const [isNewCred, setIsNewCred] = useState(false)
   const [deletingDevice, setDeletingDevice] = useState<FtpDeviceItem | null>(null)
 
-  const canManage = isSuperAdminView || Boolean(ability?.can('manage', 'ftp_devices'))
+  // Solo el Super Administrador en la vista administrativa puede crear, editar, borrar o ver credenciales.
+  // En la pantalla del cliente (/printers-ftp), la vista es 100% de sólo lectura / monitoreo.
+  const canManage = isSuperAdminView
 
   const reloadDevices = useCallback(() => {
     dispatch(fetchFtpDevices(companyId))
@@ -239,18 +241,22 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
       <Grid item xs={12}>
         <Card>
           <CardHeader
-            title='Impresoras HP y Accesos FTP Configurados'
-            subheader='Conectá equipos HP LaserJet Managed E52645 u otros multifunción con almacenamiento aislado por empresa'
+            title={isSuperAdminView ? 'Impresoras HP y Accesos FTP' : 'Impresoras Multifunción Conectadas'}
+            subheader={
+              isSuperAdminView
+                ? 'Conectá equipos HP LaserJet Managed E52645 u otros multifunción con almacenamiento aislado por empresa'
+                : 'Equipos asignados a su empresa para digitalización directa hacia la bóveda'
+            }
             action={
-              <Stack direction='row' spacing={1.5} flexWrap='wrap'>
-                <Button
-                  variant='outlined'
-                  startIcon={<Icon icon='tabler:book' />}
-                  onClick={() => setGuideOpen(true)}
-                >
-                  Guía HP E52645
-                </Button>
-                {canManage && (
+              canManage ? (
+                <Stack direction='row' spacing={1.5} flexWrap='wrap'>
+                  <Button
+                    variant='outlined'
+                    startIcon={<Icon icon='tabler:book' />}
+                    onClick={() => setGuideOpen(true)}
+                  >
+                    Guía HP E52645
+                  </Button>
                   <Button
                     variant='contained'
                     startIcon={<Icon icon='tabler:plus' />}
@@ -261,8 +267,8 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                   >
                     Conectar Equipo HP
                   </Button>
-                )}
-              </Stack>
+                </Stack>
+              ) : null
             }
           />
           <CardContent sx={{ p: 0 }}>
@@ -283,10 +289,12 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
               >
                 <Icon icon='tabler:printer-off' fontSize={36} />
                 <Typography variant='subtitle1' sx={{ mt: 1, fontWeight: 600 }}>
-                  Todavía no hay impresoras HP configuradas
+                  Todavía no hay impresoras configuradas
                 </Typography>
                 <Typography variant='body2' color='text.secondary' sx={{ mt: 0.5, mb: 2 }}>
-                  Generá un usuario virtual aislado para recibir PDFs escaneados directo en la bóveda de esta compañía.
+                  {canManage
+                    ? 'Generá un usuario virtual aislado para recibir PDFs escaneados directo en la bóveda de esta compañía.'
+                    : 'Su empresa aún no tiene equipos vinculados. El administrador de HelpCopies se encargará de la configuración inicial.'}
                 </Typography>
                 {canManage && (
                   <Button variant='contained' onClick={() => setFormOpen(true)}>
@@ -301,11 +309,11 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                     <TableRow>
                       <TableCell>Equipo / Modelo</TableCell>
                       <TableCell>Protocolo</TableCell>
-                      <TableCell>Usuario & Subcarpeta</TableCell>
+                      <TableCell>Bandeja / Subcarpeta</TableCell>
                       <TableCell align='center'>Escaneos</TableCell>
                       <TableCell align='center'>Sync SFTPGo</TableCell>
                       <TableCell align='center'>Estado</TableCell>
-                      <TableCell align='right'>Acciones</TableCell>
+                      {canManage && <TableCell align='right'>Acciones</TableCell>}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -324,11 +332,13 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                         </TableCell>
                         <TableCell>
                           <Typography variant='body2' sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                            {dev.username}
-                          </Typography>
-                          <Typography variant='caption' color='text.secondary'>
                             inbox/{dev.subFolder}
                           </Typography>
+                          {canManage && (
+                            <Typography variant='caption' color='text.secondary' display='block'>
+                              {dev.username}
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell align='center'>
                           <Typography variant='body2' sx={{ fontWeight: 600 }}>
@@ -351,8 +361,8 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                             label={dev.status === 'ACTIVE' ? 'Activo' : 'Pausado'}
                           />
                         </TableCell>
-                        <TableCell align='right'>
-                          {canManage && (
+                        {canManage && (
+                          <TableCell align='right'>
                             <Box sx={{ display: 'inline-flex', gap: 0.5 }}>
                               <Tooltip title='Ver credenciales FTP / SFTP'>
                                 <IconButton size='small' color='primary' onClick={() => handleViewCredentials(dev)}>
@@ -386,8 +396,8 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                                 </IconButton>
                               </Tooltip>
                             </Box>
-                          )}
-                        </TableCell>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
