@@ -12,7 +12,7 @@ RUN pnpm install --no-frozen-lockfile
 
 COPY . .
 
-ARG NEXT_PUBLIC_API_URL=https://api.helpcopies.com/api
+ARG NEXT_PUBLIC_API_URL=https://api-scan.helpcopies.com/api
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS="--max-old-space-size=4096"

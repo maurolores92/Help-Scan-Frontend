@@ -8,4 +8,4 @@ services:
     environment:
       - PORT=3000
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.helpcopies.com/api}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api-scan.helpcopies.com/api}

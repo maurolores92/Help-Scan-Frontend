@@ -9,20 +9,31 @@
  * Si no está definida en .env, toma la IP/hostname actual del navegador en el puerto 5002 como fallback.
  */
 export const getApiBaseUrl = (): string => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+  // En el navegador: autodetección inteligente de dominio de producción
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host.startsWith('scan.')) {
+      return `${window.location.protocol}//api-${host}/api`;
+    }
+    if (host.includes('helpcopies.com')) {
+      return `${window.location.protocol}//api-scan.helpcopies.com/api`;
+    }
+  }
+
+  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
 
   if (envUrl) {
-    const clean = envUrl.replace(/\/+$/, '')
+    const clean = envUrl.replace(/\/+$/, '');
     
-return clean.endsWith('/api') ? clean : `${clean}/api`
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
   }
 
   if (typeof window !== 'undefined') {
-    return `${window.location.protocol}//${window.location.hostname}:5002/api`
+    return `${window.location.protocol}//${window.location.hostname}:5002/api`;
   }
 
-  return 'http://localhost:5002/api'
-}
+  return 'http://localhost:5002/api';
+};
 
 /**
  * Obtiene la URL base para conexiones WebSocket (socket.io).
