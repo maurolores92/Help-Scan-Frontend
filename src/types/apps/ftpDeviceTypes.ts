@@ -41,6 +41,7 @@ export interface FtpServerInfo {
   passivePorts: string
   sftpgoConfigured: boolean
   sftpgoReachable: boolean
+  error?: string | null
 }
 
 export interface FtpCredentialsPayload {

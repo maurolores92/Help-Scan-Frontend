@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react'
+import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Card from '@mui/material/Card'
@@ -176,6 +177,11 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
                 label={serverInfo?.sftpgoReachable ? 'SFTPGo Activo' : 'Modo Carpeta Local / Sin SFTPGo'}
               />
             </Box>
+            {serverInfo && !serverInfo.sftpgoReachable && serverInfo.error && (
+              <Alert severity='warning' sx={{ py: 0.5, px: 1.5, fontSize: '0.8125rem' }}>
+                <strong>Diagnóstico de conexión FTP:</strong> {serverInfo.error}
+              </Alert>
+            )}
             <Typography variant='body2' color='text.secondary'>
               Host: <strong>{serverInfo?.host || 'ftp.helpcopies.com'}</strong> • SFTP:{' '}
               <strong>{serverInfo?.sftpPort || 2222}</strong> • FTPS/FTP:{' '}
