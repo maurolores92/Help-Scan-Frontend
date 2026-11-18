@@ -32,6 +32,7 @@ export interface CompanyQuotaSummaryType {
   aiQueries: AiQuotaMetricType
   totalPagesUploaded?: number
   activeDocumentsCount?: number
+  activeFtpDevicesCount?: number
 }
 
 export interface PlanType {
