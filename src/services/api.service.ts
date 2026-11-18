@@ -1,12 +1,8 @@
 import axios from 'axios';
+import { getApiBaseUrl } from 'src/utils/api-url';
 
-const host = process.env.NEXT_PUBLIC_API_URL;
-
-const api = {
-  host,
-}
 const repository = axios.create({
-  baseURL: api.host,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
     'x-api-key': '12345',
@@ -67,11 +63,11 @@ const getHeaders = () => {
 }
 
 const apiConnector = {
-  get: async <T>(path: string, params = {}) => await repository.get<T>(path, { params }).then(({ data }) => data),
-  post: async (path: string, body: any) => await repository.post(path, body).then(({ data }) => data),
-  put: async (path: string, body: any) => await repository.put(path, body).then(({ data }) => data),
-  patch: async (path: string, body: any) => await repository.patch(path, body).then(({ data }) => data),
-  remove: async (path: string, params = {}) => await repository.delete(path, { params }).then(({ data }) => data),
+  get: async <T = any>(path: string, params = {}) => await repository.get<T>(path, { params }).then(({ data }) => data),
+  post: async <T = any>(path: string, body: any) => await repository.post<T>(path, body).then(({ data }) => data),
+  put: async <T = any>(path: string, body: any) => await repository.put<T>(path, body).then(({ data }) => data),
+  patch: async <T = any>(path: string, body: any) => await repository.patch<T>(path, body).then(({ data }) => data),
+  remove: async <T = any>(path: string, params = {}) => await repository.delete<T>(path, { params }).then(({ data }) => data),
   sendFile: async (path: string, body: any) => {
     const headers = { "Content-Type": "multipart/form-data", ...getHeaders() };
 

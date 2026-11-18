@@ -24,9 +24,9 @@ const UserThemeOptions = (): ThemeOptions => {
     /*
     palette:{
       primary: {
-        light: '#8479F2',
-        main: '#7367F0',
-        dark: '#655BD3',
+        light: '#48B85F',
+        main: '#32A048',
+        dark: '#29853C',
         contrastText: '#FFF'
       }
     },

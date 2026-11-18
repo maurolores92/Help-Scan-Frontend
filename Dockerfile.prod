@@ -1,0 +1,43 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Instalar PNPM de forma global
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* .npmrc* ./
+COPY scripts/ ./scripts/
+
+RUN pnpm install
+
+COPY . .
+
+ARG NEXT_PUBLIC_API_URL=https://api.helpcopies.com/api
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN pnpm run build
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Instalar PNPM de forma global
+RUN npm install -g pnpm
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* .npmrc* ./
+COPY scripts/ ./scripts/
+
+RUN pnpm install --prod && pnpm store prune
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./next.config.js
+COPY --from=builder /app/run-start.js ./run-start.js
+
+USER node
+EXPOSE 3000
+CMD ["pnpm", "run", "start"]

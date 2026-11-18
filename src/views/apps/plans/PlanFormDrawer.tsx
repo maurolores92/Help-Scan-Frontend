@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Drawer from '@mui/material/Drawer'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
@@ -13,9 +13,11 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Divider from '@mui/material/Divider'
 import { Controller } from 'react-hook-form'
 import Icon from 'src/@core/components/icon'
-import { PlanType } from 'src/types/apps/planTypes'
+import apiConnector from 'src/services/api.service'
+import { PlanExchangeConfigType, PlanType } from 'src/types/apps/planTypes'
 import CompanyModulesSelector from 'src/views/apps/companies/list/CompanyModulesSelector'
 import PlanQuotaLimitField from './components/PlanQuotaLimitField'
+import ExchangeRateModal from './components/ExchangeRateModal'
 import { usePlanForm } from './hooks/usePlanForm'
 
 interface PlanFormDrawerProps {
@@ -31,8 +33,28 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
     handleSubmit,
     handleNameChange,
     onSubmit,
+    watch,
     formState: { errors, isSubmitting }
   } = usePlanForm(open, editPlan, onClose)
+
+  const [exchangeModalOpen, setExchangeModalOpen] = useState(false)
+  const [exchangeConfig, setExchangeConfig] = useState<PlanExchangeConfigType | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      apiConnector
+        .get<PlanExchangeConfigType>('/plans/exchange-rate')
+        .then(res => setExchangeConfig(res))
+        .catch(err => console.error(err))
+    }
+  }, [open])
+
+  const watchedPrice = Number(watch('priceMonthly') || 0)
+  const convertedPrice = exchangeConfig
+    ? exchangeConfig.roundPrices
+      ? Math.ceil(watchedPrice * Number(exchangeConfig.usdRate))
+      : Number((watchedPrice * Number(exchangeConfig.usdRate)).toFixed(2))
+    : 0
 
   return (
     <Drawer
@@ -102,6 +124,21 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
                 />
               )}
             />
+            <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+              <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 600 }}>
+                ≈ ${convertedPrice.toLocaleString('es-AR')} ARS
+              </Typography>
+              <Button
+                size='small'
+                variant='text'
+                color='primary'
+                onClick={() => setExchangeModalOpen(true)}
+                sx={{ p: 0, minWidth: 0, textTransform: 'none', fontSize: '0.75rem', fontWeight: 600 }}
+                startIcon={<Icon icon='tabler:currency-dollar' fontSize={14} />}
+              >
+                Modificar precio del dólar
+              </Button>
+            </Box>
           </Grid>
 
           <Grid item xs={12} sm={6}>
@@ -110,7 +147,7 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
               control={control}
               render={({ field }) => (
                 <TextField {...field} select fullWidth label='Color Distintivo'>
-                  <MenuItem value='primary'>Azul Principal</MenuItem>
+                  <MenuItem value='primary'>Verde Principal (Help Scan)</MenuItem>
                   <MenuItem value='info'>Celeste Info</MenuItem>
                   <MenuItem value='success'>Verde Corporativo</MenuItem>
                   <MenuItem value='warning'>Ámbar Destacado</MenuItem>
@@ -149,7 +186,8 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
           <Grid item xs={12} sm={6}>
             <PlanQuotaLimitField
               name='maxDocuments'
-              label='Máx. Documentos PDF'
+              label='Máx. Hojas / Páginas'
+              helperText='Límite mensual acumulativo de hojas subidas'
               defaultNumericValue={1000}
               control={control}
               errorMessage={errors.maxDocuments?.message}
@@ -170,8 +208,8 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
           <Grid item xs={12} sm={6}>
             <PlanQuotaLimitField
               name='maxAiQueriesMonthly'
-              label='Consultas IA / Mes'
-              helperText='0 deshabilita consultas IA'
+              label='Extracción OCR / Mes'
+              helperText='0 deshabilita procesamiento OCR'
               defaultNumericValue={500}
               allowZero
               control={control}
@@ -219,6 +257,12 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
           </Grid>
         </Grid>
       </Box>
+
+      <ExchangeRateModal
+        open={exchangeModalOpen}
+        onClose={() => setExchangeModalOpen(false)}
+        onSuccess={config => setExchangeConfig(config)}
+      />
     </Drawer>
   )
 }

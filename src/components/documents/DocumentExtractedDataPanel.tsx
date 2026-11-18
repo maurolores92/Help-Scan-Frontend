@@ -22,9 +22,9 @@ interface DocumentExtractedDataPanelProps {
 }
 
 const ENGINE_LABELS: Record<string, string> = {
-  gemini_vision: 'Gemini Multimodal OCR (Visión)',
-  gemini_text: 'Gemini Texto Nativo',
-  local_parser: 'Motor Heurístico Local'
+  gemini_vision: 'Motor OCR Visual',
+  gemini_text: 'Motor OCR Nativo',
+  local_parser: 'Motor OCR Local'
 }
 
 const formatKeyLabel = (key: string) =>
@@ -79,7 +79,26 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
     ([, val]) => val !== null && val !== undefined && val !== ''
   )
   const items = Array.isArray(doc.extractedData?.items) ? doc.extractedData!.items! : []
-  const itemColumns = items.length > 0 ? Object.keys(items[0]).slice(0, 6) : []
+  const hasCodigo = items.some(item => Boolean(item.codigo || (item as any).code))
+  const hasCantidad = items.some(
+    item =>
+      (item.cantidad !== null && item.cantidad !== undefined) ||
+      ((item as any).quantity !== null && (item as any).quantity !== undefined)
+  )
+  const hasPrecioSinIva = items.some(
+    item =>
+      (item.precioSinIva !== null && item.precioSinIva !== undefined) ||
+      ((item as any).unitPrice !== null && (item as any).unitPrice !== undefined)
+  )
+  const hasIva = items.some(
+    item => (item as any).ivaPorcentaje !== null && (item as any).ivaPorcentaje !== undefined
+  )
+  const hasPrecioFinal = items.some(
+    item =>
+      (item.precioFinal !== null && item.precioFinal !== undefined) ||
+      ((item as any).subtotal !== null && (item as any).subtotal !== undefined) ||
+      ((item as any).total !== null && (item as any).total !== undefined)
+  )
   const involvedParties = Array.isArray(doc.extractedData?.involvedParties)
     ? doc.extractedData!.involvedParties!
     : []
@@ -91,6 +110,17 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
           minimumFractionDigits: 2
         })}`
       : null
+
+  const formatItemPrice = (val: any) => {
+    if (val === null || val === undefined || val === '') return '—'
+    const num = Number(val)
+    if (!Number.isFinite(num)) return String(val)
+
+    return `${doc.currency || '$'} ${num.toLocaleString('es-AR', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    })}`
+  }
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -154,7 +184,7 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
             startIcon={<Icon icon='tabler:refresh' />}
             onClick={() => onReprocess(doc)}
           >
-            {reprocessing ? 'Reprocesando...' : 'Reprocesar IA'}
+            {reprocessing ? 'Reprocesando...' : 'Reprocesar OCR'}
           </Button>
         )}
       </Box>
@@ -186,32 +216,117 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
         </Box>
       )}
 
-      {items.length > 0 && itemColumns.length > 0 && (
+      {items.length > 0 && (
         <Box>
-          <Typography variant='subtitle2' sx={{ mb: 1.5, fontWeight: 600 }}>
-            Detalle / Ítems Extraídos ({items.length})
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Icon icon='tabler:list-details' fontSize={18} />
+              Artículos & Ítems del Comprobante ({items.length})
+            </Typography>
+          </Box>
           <TableContainer component={Paper} variant='outlined'>
             <Table size='small'>
-              <TableHead>
+              <TableHead sx={{ backgroundColor: 'action.hover' }}>
                 <TableRow>
-                  {itemColumns.map(colKey => (
-                    <TableCell key={colKey} sx={{ fontWeight: 600 }}>
-                      {formatKeyLabel(colKey)}
+                  {hasCodigo && <TableCell sx={{ fontWeight: 700, width: 120 }}>Código</TableCell>}
+                  <TableCell sx={{ fontWeight: 700 }}>Nombre del Artículo / Descripción</TableCell>
+                  {hasCantidad && (
+                    <TableCell align='center' sx={{ fontWeight: 700, width: 100 }}>
+                      Cantidad
                     </TableCell>
-                  ))}
+                  )}
+                  {hasPrecioSinIva && (
+                    <TableCell align='right' sx={{ fontWeight: 700, width: 130 }}>
+                      Precio sin IVA
+                    </TableCell>
+                  )}
+                  {hasIva && (
+                    <TableCell align='center' sx={{ fontWeight: 700, width: 85 }}>
+                      % IVA
+                    </TableCell>
+                  )}
+                  {hasPrecioFinal && (
+                    <TableCell align='right' sx={{ fontWeight: 700, width: 140 }}>
+                      Precio Final
+                    </TableCell>
+                  )}
                 </TableRow>
               </TableHead>
               <TableBody>
-                {items.map((item, idx) => (
-                  <TableRow key={idx}>
-                    {itemColumns.map(colKey => (
-                      <TableCell key={colKey}>
-                        {item[colKey] !== null && item[colKey] !== undefined ? String(item[colKey]) : '—'}
+                {items.map((item, idx) => {
+                  const code = item.codigo || (item as any).code
+                  const name = item.nombre || (item as any).descripcion || (item as any).description
+                  const qty =
+                    item.cantidad !== null && item.cantidad !== undefined
+                      ? item.cantidad
+                      : (item as any).quantity
+                  const pSinIva =
+                    item.precioSinIva !== null && item.precioSinIva !== undefined
+                      ? item.precioSinIva
+                      : (item as any).unitPrice
+                  const iva = (item as any).ivaPorcentaje
+                  const pFinal =
+                    item.precioFinal !== null && item.precioFinal !== undefined
+                      ? item.precioFinal
+                      : (item as any).subtotal || (item as any).total
+
+                  return (
+                    <TableRow key={idx} hover>
+                      {hasCodigo && (
+                        <TableCell>
+                          {code ? (
+                            <Chip
+                              label={code}
+                              size='small'
+                              variant='outlined'
+                              sx={{ fontFamily: 'monospace', fontWeight: 600, fontSize: '0.75rem' }}
+                            />
+                          ) : (
+                            <Typography variant='caption' sx={{ color: 'text.disabled' }}>
+                              —
+                            </Typography>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <Typography variant='body2' sx={{ fontWeight: 500 }}>
+                          {name || '—'}
+                        </Typography>
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                      {hasCantidad && (
+                        <TableCell align='center'>
+                          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                            {qty !== null && qty !== undefined ? qty : '—'}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      {hasPrecioSinIva && (
+                        <TableCell align='right'>
+                          <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+                            {formatItemPrice(pSinIva)}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      {hasIva && (
+                        <TableCell align='center'>
+                          <Typography variant='body2'>
+                            {iva !== null && iva !== undefined ? `${iva}%` : '—'}
+                          </Typography>
+                        </TableCell>
+                      )}
+                      {hasPrecioFinal && (
+                        <TableCell align='right'>
+                          <Typography
+                            variant='body2'
+                            sx={{ fontWeight: 700, color: pFinal !== null ? 'primary.main' : 'inherit' }}
+                          >
+                            {formatItemPrice(pFinal)}
+                          </Typography>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </TableContainer>

@@ -2,11 +2,15 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# Instalar PNPM de forma global
+RUN npm install -g pnpm
 
-RUN npm install
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* .npmrc* ./
+COPY scripts/ ./scripts/
+
+RUN pnpm install
 
 COPY . .
 
-# Para desarrollo usamos este comando
-CMD ["npm", "run", "dev"]
+# Para desarrollo usamos PNPM
+CMD ["pnpm", "run", "dev"]

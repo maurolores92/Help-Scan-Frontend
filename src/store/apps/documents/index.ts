@@ -3,7 +3,14 @@ import { Dispatch } from 'redux'
 import apiConnector from 'src/services/api.service'
 
 export type DocumentSource = 'APP_UPLOAD' | 'FTP'
-export type DocumentStatus = 'PENDING' | 'PROCESSING' | 'PROCESSED' | 'ERROR'
+export type DocumentStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'PENDING_APPROVAL'
+  | 'VALIDATED'
+  | 'REJECTED'
+  | 'PROCESSED'
+  | 'ERROR'
 
 export interface DocumentInvolvedParty {
   role: string
@@ -11,9 +18,20 @@ export interface DocumentInvolvedParty {
   identifier?: string | null
 }
 
+export interface DocumentArticleItem {
+  id?: string | number
+  codigo?: string | null
+  nombre: string
+  cantidad?: number | null
+  precioSinIva?: number | null
+  precioFinal?: number | null
+  ivaPorcentaje?: number | null
+  [key: string]: any
+}
+
 export interface DocumentExtractedData {
   attributes?: Record<string, string | number | boolean | null>
-  items?: Array<Record<string, string | number | null>>
+  items?: DocumentArticleItem[]
   involvedParties?: DocumentInvolvedParty[]
   dates?: Record<string, string>
   amounts?: Record<string, number>
@@ -36,13 +54,32 @@ export interface DocumentItem {
   summary?: string | null
   documentNumber?: string | null
   documentDate?: string | null
+  dueDate?: string | null
   issuerName?: string | null
   issuerTaxId?: string | null
   recipientName?: string | null
+  recipientTaxId?: string | null
+  recipientPhone?: string | null
+  recipientEmail?: string | null
+  deliveryAddress?: string | null
   responsiblePerson?: string | null
   currency?: string | null
+  netAmount?: number | string | null
+  taxAmount?: number | string | null
   totalAmount?: number | string | null
+  paymentTerms?: string | null
+  paymentMethod?: string | null
+  referenceNumber?: string | null
+  cae?: string | null
+  taxCondition?: string | null
+  equipmentId?: string | null
+  equipmentModel?: string | null
+  meterCount?: string | null
+  validatedByUserId?: number | null
+  validatedAt?: string | null
+  validationNotes?: string | null
   tags?: string[] | null
+  items?: DocumentArticleItem[] | null
   extractedData?: DocumentExtractedData | null
   rawText?: string | null
   pageCount?: number | null
@@ -52,6 +89,8 @@ export interface DocumentItem {
   userId?: number | null
   uploadedByUserId?: number | null
   errorMessage?: string | null
+  ftpDeviceId?: number | null
+  ftpDeviceName?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -61,6 +100,50 @@ export interface DocumentTypeFacet {
   count: number
 }
 
+export interface DocumentFacets {
+  documentTypes: DocumentTypeFacet[]
+  statuses: DocumentTypeFacet[]
+  equipmentIds: DocumentTypeFacet[]
+}
+
+export interface ValidateDocumentPayload {
+  id: number
+  documentType?: string
+  documentNumber?: string
+  documentDate?: string
+  dueDate?: string
+  issuerName?: string
+  issuerTaxId?: string
+  recipientName?: string
+  recipientTaxId?: string
+  recipientPhone?: string
+  recipientEmail?: string
+  deliveryAddress?: string
+  responsiblePerson?: string
+  currency?: string
+  netAmount?: number
+  taxAmount?: number
+  totalAmount?: number
+  paymentTerms?: string
+  paymentMethod?: string
+  referenceNumber?: string
+  cae?: string
+  taxCondition?: string
+  equipmentId?: string
+  equipmentModel?: string
+  meterCount?: string
+  summary?: string
+  tags?: string[]
+  items?: DocumentArticleItem[]
+  extractedData?: Record<string, any>
+  validationNotes?: string
+}
+
+export interface RejectDocumentPayload {
+  id: number
+  reason: string
+}
+
 export interface FetchDocumentParams {
   page?: number
   limit?: number
@@ -68,6 +151,9 @@ export interface FetchDocumentParams {
   source?: string
   search?: string
   documentType?: string
+  equipmentId?: string
+  equipmentModel?: string
+  recipientTaxId?: string
   dateFrom?: string
   dateTo?: string
   filterCompanyId?: number
@@ -118,6 +204,15 @@ export const uploadDocument = createAsyncThunk(
   }
 )
 
+export const uploadMultipleDocuments = createAsyncThunk(
+  'documents/uploadMultipleDocuments',
+  async (formData: FormData) => {
+    const response = await apiConnector.sendFile('/documents/upload-multiple', formData)
+
+    return response
+  }
+)
+
 export const syncFtpDocuments = createAsyncThunk(
   'documents/syncFtpDocuments',
   async (companyId: number | undefined) => {
@@ -147,11 +242,33 @@ export const deleteDocument = createAsyncThunk(
   }
 )
 
+export const validateDocument = createAsyncThunk(
+  'documents/validateDocument',
+  async ({ id, ...dto }: ValidateDocumentPayload, { dispatch }: Redux) => {
+    const response: any = await apiConnector.patch(`/documents/${id}/validate`, dto)
+    dispatch(fetchDocumentFacets(undefined))
+
+    return response
+  }
+)
+
+export const rejectDocument = createAsyncThunk(
+  'documents/rejectDocument',
+  async ({ id, reason }: RejectDocumentPayload, { dispatch }: Redux) => {
+    const response: any = await apiConnector.patch(`/documents/${id}/reject`, { reason })
+    dispatch(fetchDocumentFacets(undefined))
+
+    return response
+  }
+)
+
 export const appDocumentsSlice = createSlice({
   name: 'documents',
   initialState: {
     data: [] as DocumentItem[],
     facets: [] as DocumentTypeFacet[],
+    statusFacets: [] as DocumentTypeFacet[],
+    equipmentFacets: [] as DocumentTypeFacet[],
     total: 0,
     params: {
       page: 1,
@@ -160,12 +277,16 @@ export const appDocumentsSlice = createSlice({
       status: '',
       source: '',
       documentType: '',
+      equipmentId: '',
+      equipmentModel: '',
+      recipientTaxId: '',
       dateFrom: '',
       dateTo: ''
     },
     loading: false,
     uploading: false,
     syncingFtp: false,
+    validating: false,
     reprocessingId: null as number | null,
     selectedDocument: null as DocumentItem | null,
     error: null as string | null
@@ -195,6 +316,8 @@ export const appDocumentsSlice = createSlice({
       })
       .addCase(fetchDocumentFacets.fulfilled, (state, action: any) => {
         state.facets = action.payload?.documentTypes || []
+        state.statusFacets = action.payload?.statuses || []
+        state.equipmentFacets = action.payload?.equipmentIds || []
       })
       .addCase(fetchDocumentById.fulfilled, (state, action: any) => {
         state.selectedDocument = action.payload
@@ -208,6 +331,16 @@ export const appDocumentsSlice = createSlice({
       .addCase(uploadDocument.rejected, (state, action) => {
         state.uploading = false
         state.error = action.error.message || 'Error al subir documento'
+      })
+      .addCase(uploadMultipleDocuments.pending, state => {
+        state.uploading = true
+      })
+      .addCase(uploadMultipleDocuments.fulfilled, state => {
+        state.uploading = false
+      })
+      .addCase(uploadMultipleDocuments.rejected, (state, action) => {
+        state.uploading = false
+        state.error = action.error.message || 'Error al subir documentos'
       })
       .addCase(syncFtpDocuments.pending, state => {
         state.syncingFtp = true
@@ -227,6 +360,40 @@ export const appDocumentsSlice = createSlice({
       })
       .addCase(reprocessDocument.rejected, state => {
         state.reprocessingId = null
+      })
+      .addCase(validateDocument.pending, state => {
+        state.validating = true
+      })
+      .addCase(validateDocument.fulfilled, (state, action: any) => {
+        state.validating = false
+        const updatedDoc = action.payload?.document
+        if (updatedDoc) {
+          state.data = state.data.map(d => (d.id === updatedDoc.id ? updatedDoc : d))
+          if (state.selectedDocument?.id === updatedDoc.id) {
+            state.selectedDocument = updatedDoc
+          }
+        }
+      })
+      .addCase(validateDocument.rejected, (state, action) => {
+        state.validating = false
+        state.error = action.error.message || 'Error al validar documento'
+      })
+      .addCase(rejectDocument.pending, state => {
+        state.validating = true
+      })
+      .addCase(rejectDocument.fulfilled, (state, action: any) => {
+        state.validating = false
+        const updatedDoc = action.payload?.document
+        if (updatedDoc) {
+          state.data = state.data.map(d => (d.id === updatedDoc.id ? updatedDoc : d))
+          if (state.selectedDocument?.id === updatedDoc.id) {
+            state.selectedDocument = updatedDoc
+          }
+        }
+      })
+      .addCase(rejectDocument.rejected, (state, action) => {
+        state.validating = false
+        state.error = action.error.message || 'Error al rechazar documento'
       })
   }
 })

@@ -6,8 +6,8 @@ loadEnvConfig(__dirname)
 
 const port = process.env.PORT || '3000'
 
-// Levanta Next.js escuchando en 0.0.0.0 con el puerto configurado
-const devProcess = spawn('npx', ['next', 'dev', '-H', '0.0.0.0', '-p', port], {
+// Levanta Next.js escuchando en 0.0.0.0 con el puerto configurado usando pnpm
+const devProcess = spawn('pnpm', ['exec', 'next', 'dev', '-H', '0.0.0.0', '-p', port], {
   stdio: 'inherit',
   shell: true
 })

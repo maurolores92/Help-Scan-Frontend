@@ -38,9 +38,9 @@ const DefaultPalette = (mode: Palette['mode'], skin: Skin): Palette => {
       white: whiteColor
     },
     primary: {
-      light: '#818CF8',
-      main: '#4F46E5', // Cognitive Indigo (HC-SCAN Primary)
-      dark: '#3730A3',
+      light: '#48B85F',
+      main: '#32A048', // Verde corporativo Help Scan (#32A048)
+      dark: '#29853C',
       contrastText: whiteColor
     },
     secondary: {

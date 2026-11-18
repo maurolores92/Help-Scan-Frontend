@@ -7,6 +7,7 @@ import Tooltip from '@mui/material/Tooltip'
 export const formatStorageMb = (mb: number): string => {
   if (mb >= 1024) {
     const gb = mb / 1024
+
     return `${Number.isInteger(gb) ? gb : gb.toFixed(1)} GB`
   }
 

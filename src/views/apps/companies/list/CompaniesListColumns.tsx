@@ -80,11 +80,16 @@ const RowOptions: React.FC<RowOptionsProps> = ({
           }}
           sx={{ '& svg': { mr: 2 } }}
         >
-          <Icon icon={row.status === 'SUSPENDED' ? 'tabler:check' : 'tabler:ban'} fontSize={18} />
-          {row.status === 'SUSPENDED' ? 'Activar' : 'Suspender'}
+          <Icon
+            icon={row.status === 'ACTIVE' ? 'tabler:ban' : 'tabler:check'}
+            fontSize={18}
+          />
+          <Typography color={row.status === 'ACTIVE' ? 'text.primary' : 'success.main'}>
+            {row.status === 'ACTIVE' ? 'Suspender' : 'Activar'}
+          </Typography>
         </MenuItem>
 
-        {row.status === 'SUSPENDED' && (
+        {row.status !== 'ACTIVE' && (
           <MenuItem
             onClick={() => {
               setAnchorEl(null)
@@ -205,7 +210,7 @@ export const buildCompaniesColumns = (handlers: {
     flex: 0.15,
     minWidth: 140,
     field: 'aiQuota',
-    headerName: 'Consultas IA / Mes',
+    headerName: 'OCR / Mes',
     renderCell: ({ row }) => {
       const ai = row.quotaSummary?.aiQueries
 

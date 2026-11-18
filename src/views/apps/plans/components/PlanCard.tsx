@@ -65,9 +65,18 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
           <Typography variant='h4' sx={{ fontWeight: 700 }}>
             USD {Number(plan.priceMonthly || 0).toLocaleString('es-AR')}
             <Typography component='span' variant='body2' sx={{ color: 'text.secondary', ml: 1 }}>
-              / mes (ref.)
+              / mes
             </Typography>
           </Typography>
+          {plan.priceInPesos !== undefined && Number(plan.priceMonthly || 0) > 0 ? (
+            <Typography variant='body2' sx={{ color: 'primary.main', fontWeight: 600, mt: 0.5 }}>
+              ≈ $ {Number(plan.priceInPesos).toLocaleString('es-AR')} ARS {plan.exchangeRateApplied ? `(Cotiz: $${Number(plan.exchangeRateApplied).toLocaleString('es-AR')} ARS)` : ''}
+            </Typography>
+          ) : Number(plan.priceMonthly || 0) === 0 ? (
+            <Typography variant='body2' sx={{ color: 'success.main', fontWeight: 600, mt: 0.5 }}>
+              Plan Gratuito / $0 ARS
+            </Typography>
+          ) : null}
           <Typography variant='body2' sx={{ color: 'text.secondary', mt: 1, minHeight: 40 }}>
             {plan.description || 'Sin descripción comercial configurada.'}
           </Typography>
@@ -89,10 +98,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Icon icon='tabler:files' fontSize={19} />
-              <Typography variant='body2'>Documentos PDF</Typography>
+              <Typography variant='body2'>Hojas / Páginas</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {renderLimitText(plan.maxDocuments, 'archivos')}
+              {renderLimitText(plan.maxPages ?? plan.maxDocuments, 'hojas')}
             </Typography>
           </Box>
 
@@ -108,8 +117,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Icon icon='tabler:sparkles' fontSize={19} />
-              <Typography variant='body2'>Consultas IA / mes</Typography>
+              <Icon icon='tabler:cpu' fontSize={19} />
+              <Typography variant='body2'>Extracción OCR / mes</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
               {renderLimitText(plan.maxAiQueriesMonthly, 'consultas')}

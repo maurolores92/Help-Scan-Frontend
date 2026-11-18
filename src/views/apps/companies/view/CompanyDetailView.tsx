@@ -11,12 +11,17 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Grid from '@mui/material/Grid'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
+import toast from 'react-hot-toast'
 import Icon from 'src/@core/components/icon'
 import CustomAvatar from 'src/@core/components/mui/avatar'
 import { getInitials } from 'src/@core/utils/get-initials'
 import useApi from 'src/hooks/useApi'
+import apiConnector from 'src/services/api.service'
+import StatusChip from 'src/components/common/StatusChip'
 import CompanyModulesView from './CompanyModulesView'
 import CompanyPlanQuotaView from './CompanyPlanQuotaView'
+import CompanyUsersView from './CompanyUsersView'
+import FtpDevicesView from 'src/views/apps/ftp-devices/FtpDevicesView'
 
 export const CompanyDetailView: React.FC = () => {
   const router = useRouter()
@@ -24,6 +29,7 @@ export const CompanyDetailView: React.FC = () => {
 
   const [company, setCompany] = useState<any>(null)
   const [loading, setLoading] = useState<boolean>(true)
+  const [statusUpdating, setStatusUpdating] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<string>('plan')
 
   const api = useApi('companies')
@@ -44,6 +50,24 @@ export const CompanyDetailView: React.FC = () => {
   useEffect(() => {
     fetchCompany()
   }, [fetchCompany])
+
+  const handleStatusChange = async (newStatus: 'ACTIVE' | 'SUSPENDED') => {
+    if (!company?.id) return
+    try {
+      setStatusUpdating(true)
+      await apiConnector.patch(`/companies/${company.id}/status`, { status: newStatus })
+      toast.success(
+        newStatus === 'ACTIVE'
+          ? `Compañía '${company.name}' activada y usuario administrador habilitado`
+          : `Compañía '${company.name}' suspendida correctamente`
+      )
+      await fetchCompany()
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Error al cambiar el estado de la compañía')
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
 
   const handleTabChange = (_event: SyntheticEvent, value: string) => {
     setActiveTab(value)
@@ -95,7 +119,7 @@ export const CompanyDetailView: React.FC = () => {
               {getInitials(company.name || 'Empresa')}
             </CustomAvatar>
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
                 <Typography variant='h5' sx={{ fontWeight: 600 }}>
                   {company.name}
                 </Typography>
@@ -107,12 +131,37 @@ export const CompanyDetailView: React.FC = () => {
                     sx={{ fontWeight: 600 }}
                   />
                 )}
+                <StatusChip status={company.status || 'ACTIVE'} />
               </Box>
               <Typography sx={{ color: 'text.secondary' }}>
                 {company.legalName ? `${company.legalName} • ` : ''}
                 {company.taxId ? `CUIT: ${company.taxId}` : 'Sin CUIT registrado'}
               </Typography>
             </Box>
+          </Box>
+
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            {company.status === 'ACTIVE' ? (
+              <Button
+                variant='outlined'
+                color='warning'
+                startIcon={<Icon icon='tabler:ban' />}
+                onClick={() => handleStatusChange('SUSPENDED')}
+                disabled={statusUpdating}
+              >
+                Suspender Empresa
+              </Button>
+            ) : (
+              <Button
+                variant='contained'
+                color='success'
+                startIcon={<Icon icon='tabler:check' />}
+                onClick={() => handleStatusChange('ACTIVE')}
+                disabled={statusUpdating}
+              >
+                Activar Empresa y Administrador
+              </Button>
+            )}
           </Box>
         </Card>
       </Grid>
@@ -131,9 +180,21 @@ export const CompanyDetailView: React.FC = () => {
               iconPosition='start'
             />
             <Tab
+              value='users'
+              label='Usuarios de la Empresa'
+              icon={<Icon icon='tabler:users' />}
+              iconPosition='start'
+            />
+            <Tab
               value='modules'
               label='Módulos Habilitados'
               icon={<Icon icon='tabler:box' />}
+              iconPosition='start'
+            />
+            <Tab
+              value='ftp'
+              label='Impresoras HP & FTP'
+              icon={<Icon icon='tabler:printer' />}
               iconPosition='start'
             />
           </TabList>
@@ -141,8 +202,14 @@ export const CompanyDetailView: React.FC = () => {
           <TabPanel value='plan' sx={{ p: 0 }}>
             <CompanyPlanQuotaView company={company} onCompanyUpdated={fetchCompany} />
           </TabPanel>
+          <TabPanel value='users' sx={{ p: 0 }}>
+            <CompanyUsersView company={company} onQuotaChanged={fetchCompany} />
+          </TabPanel>
           <TabPanel value='modules' sx={{ p: 0 }}>
             <CompanyModulesView companyId={Number(id)} />
+          </TabPanel>
+          <TabPanel value='ftp' sx={{ p: 0 }}>
+            <FtpDevicesView companyId={Number(id)} isSuperAdminView />
           </TabPanel>
         </TabContext>
       </Grid>

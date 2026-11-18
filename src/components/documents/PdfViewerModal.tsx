@@ -53,7 +53,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
       apiConnector
         .get<DocumentItem>(`/documents/${doc.id}`)
         .then(full => setDetailDoc(full))
-        .catch(() => {})
+        .catch(() => undefined)
 
       apiConnector
         .getFileBlob(`/documents/${doc.id}/file`)
@@ -147,7 +147,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({
         <Box sx={{ borderBottom: 1, borderColor: 'divider', px: 6 }}>
           <TabList onChange={(_, value) => setActiveTab(value)}>
             <Tab label='Visualizador PDF' value='pdf' icon={<Icon icon='tabler:eye' />} iconPosition='start' />
-            <Tab label='Ficha Inteligente IA' value='extracted' icon={<Icon icon='tabler:sparkles' />} iconPosition='start' />
+            <Tab label='Ficha OCR' value='extracted' icon={<Icon icon='tabler:file-text' />} iconPosition='start' />
             <Tab label='Texto Completo (OCR)' value='ocr' icon={<Icon icon='tabler:align-justified' />} iconPosition='start' />
           </TabList>
         </Box>

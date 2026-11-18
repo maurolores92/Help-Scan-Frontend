@@ -13,6 +13,7 @@ export const companyModalSchema = yup.object().shape({
   address: yup.string().optional(),
   phone: yup.string().optional(),
   email: yup.string().email('Ingrese un correo válido').nullable().optional(),
+  status: yup.string().oneOf(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
   planId: yup.number().nullable().optional(),
   useCustomLimits: yup.boolean().required(),
   maxUsers: yup

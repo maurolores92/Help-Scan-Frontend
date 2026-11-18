@@ -10,6 +10,7 @@ import CustomAvatar from 'src/@core/components/mui/avatar'
 import Icon from 'src/@core/components/icon'
 import { ThemeColor } from 'src/@core/layouts/types'
 import { getInitials } from 'src/@core/utils/get-initials'
+import { getImageUrl } from 'src/utils/api-url'
 import DateTimeCell from '../components/DateTimeCell'
 import { actionColors, actionLabels, formatEntityCategory } from '../utils/auditFormatters'
 
@@ -21,11 +22,7 @@ const userRoleObj: Record<string, { icon: string; color: ThemeColor }> = {
 }
 
 const renderActorAvatar = (user: any) => {
-  const imgSrc = user?.image
-    ? user.image.startsWith('http')
-      ? user.image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${user.image}`
-    : user?.avatar || null
+  const imgSrc = user?.image ? getImageUrl(`users/${user.image}`) : user?.avatar || null
 
   if (imgSrc) {
     return <CustomAvatar src={imgSrc} sx={{ mr: 2.5, width: 38, height: 38 }} />

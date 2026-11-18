@@ -13,8 +13,8 @@ import toast from 'react-hot-toast'
 // ** Auth
 import { useAuth } from 'src/hooks/useAuth'
 
-// ** Config
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL
+// ** Config & Utils
+import { getWsUrl } from 'src/utils/api-url'
 
 /**
  * Remueve emojis al inicio de una cadena para evitar que se muestren duplicados
@@ -65,7 +65,7 @@ export const NotificationProvider = ({ children }: Props) => {
     if (!token) return
 
     // Conectar al namespace /notifications con el JWT
-    const socket = io(`${WS_URL}/notifications`, {
+    const socket = io(`${getWsUrl()}/notifications`, {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,
@@ -115,7 +115,7 @@ export const NotificationProvider = ({ children }: Props) => {
               borderRadius: '10px',
               background: '#1e1e2d',
               color: '#fff',
-              border: '1px solid #7367f0',
+              border: '1px solid #32A048',
             },
           }
         )

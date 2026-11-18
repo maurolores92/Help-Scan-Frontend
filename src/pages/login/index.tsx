@@ -1,4 +1,4 @@
-﻿// ** React Imports
+// ** React Imports
 import { useState, ReactNode } from 'react'
 
 // ** Next Imports
@@ -150,10 +150,10 @@ const LoginPage = () => {
   return (
     <>
       <Head>
-        <title>Iniciar Sesión | HC-SCAN - Inteligencia Documental</title>
+        <title>Iniciar Sesión | Help Scan - Gestión Documental</title>
         <meta
           name='description'
-          content='Acceso seguro a HC-SCAN. Gestión multitenant de PDFs, escaneo inteligente e ingesta con IA.'
+          content='Acceso seguro a Help Scan. Gestión multitenant de PDFs, escaneo inteligente e ingesta con OCR.'
         />
       </Head>
 
@@ -182,28 +182,19 @@ const LoginPage = () => {
           <HeroWrapper>
             <Box sx={{ maxWidth: 520, zIndex: 2 }}>
               {/* Badge Logo */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 4 }}>
                 <Box
-                  sx={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.info.main} 100%)`,
-                    color: 'common.white',
-                    boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.4)}`
-                  }}
-                >
-                  <Icon icon='tabler:scan' fontSize={30} />
-                </Box>
+                  component='img'
+                  src='/images/HelpScan.png'
+                  alt='Help Scan Logo'
+                  sx={{ width: 48, height: 48, objectFit: 'contain' }}
+                />
                 <Box>
                   <Typography variant='h4' sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-                    HC-SCAN
+                    Help Scan
                   </Typography>
-                  <Typography variant='caption' sx={{ color: 'text.secondary', fontWeight: 600, letterSpacing: '0.5px' }}>
-                    INTELLIGENT DOCUMENT AI
+                  <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 700, letterSpacing: '0.5px' }}>
+                    GESTIÓN DOCUMENTAL & OCR
                   </Typography>
                 </Box>
               </Box>
@@ -213,7 +204,7 @@ const LoginPage = () => {
               </Typography>
 
               <Typography variant='body1' sx={{ color: 'text.secondary', mb: 6, fontSize: '1.05rem', lineHeight: 1.6 }}>
-                Almacenamiento corporativo multitenant, ingesta mediante Web y FTP automatizado, y lectura estructurada con Inteligencia Artificial.
+                Almacenamiento corporativo multitenant, ingesta mediante Web y FTP automatizado, y lectura estructurada con reconocimiento OCR.
               </Typography>
 
               {/* Tarjetas de Features */}
@@ -260,7 +251,7 @@ const LoginPage = () => {
                   </Box>
                   <Box>
                     <Typography variant='subtitle1' sx={{ fontWeight: 600 }}>
-                      Extracción Asistida por IA
+                      Extracción Avanzada por OCR
                     </Typography>
                     <Typography variant='caption' sx={{ color: 'text.secondary' }}>
                       Reconocimiento de campos clave y consulta estructurada en base de datos.
@@ -313,21 +304,13 @@ const LoginPage = () => {
             {isMobile && (
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
                 <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: 'primary.main',
-                    color: 'common.white'
-                  }}
-                >
-                  <Icon icon='tabler:scan' fontSize={26} />
-                </Box>
-                <Typography variant='h5' sx={{ fontWeight: 800 }}>
-                  HC-SCAN
+                  component='img'
+                  src='/images/HelpScan.png'
+                  alt='Help Scan'
+                  sx={{ width: 40, height: 40, objectFit: 'contain' }}
+                />
+                <Typography variant='h5' sx={{ fontWeight: 800, color: 'primary.main' }}>
+                  Help Scan
                 </Typography>
               </Box>
             )}

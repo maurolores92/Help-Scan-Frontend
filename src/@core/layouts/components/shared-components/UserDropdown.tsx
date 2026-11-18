@@ -16,6 +16,7 @@ import MenuItem, { MenuItemProps } from '@mui/material/MenuItem'
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
+import { getImageUrl } from 'src/utils/api-url'
 
 // ** Context
 import { useAuth } from 'src/hooks/useAuth'
@@ -58,11 +59,7 @@ const UserDropdown = (props: Props) => {
     : 'John Doe'
 
   // ** Vars
-  const userAvatarSrc = (user as any)?.image
-    ? ((user as any).image.startsWith('http')
-      ? (user as any).image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${(user as any).image}`)
-    : (user?.avatar || '/images/avatars/1.png')
+  const userAvatarSrc = (user as any)?.image ? getImageUrl(`users/${(user as any).image}`) : (user?.avatar || '/images/avatars/1.png')
 
   const { direction } = settings
 

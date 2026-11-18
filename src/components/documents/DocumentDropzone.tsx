@@ -7,7 +7,7 @@ import Icon from 'src/@core/components/icon'
 import toast from 'react-hot-toast'
 
 interface DocumentDropzoneProps {
-  onUpload: (file: File) => Promise<void> | void
+  onUpload: (files: File[]) => Promise<void> | void
   isUploading?: boolean
   maxSizeMb?: number
   disabled?: boolean
@@ -26,19 +26,16 @@ export const DocumentDropzone: React.FC<DocumentDropzoneProps> = ({
       if (fileRejections.length > 0) {
         const error = fileRejections[0].errors[0]
         if (error.code === 'file-too-large') {
-          toast.error(`El archivo supera el tamaño máximo permitido de ${maxSizeMb} MB`)
+          toast.error(`${fileRejections.length} archivo(s) superan el tamaño máximo de ${maxSizeMb} MB`)
         } else if (error.code === 'file-invalid-type') {
-          toast.error('Solo se permiten archivos en formato PDF')
+          toast.error(`${fileRejections.length} archivo(s) no son PDF válidos y fueron omitidos`)
         } else {
-          toast.error(error.message || 'Error al procesar el archivo')
+          toast.error(`${fileRejections.length} archivo(s) no pudieron procesarse`)
         }
-        
-return
       }
 
       if (acceptedFiles.length > 0) {
-        const file = acceptedFiles[0]
-        await onUpload(file)
+        await onUpload(acceptedFiles)
       }
     },
     [onUpload, maxSizeMb]
@@ -50,7 +47,7 @@ return
       'application/pdf': ['.pdf']
     },
     maxSize: maxSizeBytes,
-    multiple: false,
+    multiple: true,
     disabled: disabled || isUploading
   })
 
@@ -77,10 +74,10 @@ return
           <>
             <CircularProgress size={44} />
             <Typography variant='body1' sx={{ fontWeight: 500 }}>
-              Subiendo documento PDF...
+              Subiendo y procesando documentos PDF...
             </Typography>
             <Typography variant='caption' sx={{ color: 'text.secondary' }}>
-              Por favor espere mientras se almacena y calcula el hash de integridad
+              Por favor espere mientras se almacenan de forma segura y se ingresan a la cola de extracción OCR
             </Typography>
           </>
         ) : (
@@ -97,13 +94,15 @@ return
                 justifyContent: 'center'
               }}
             >
-              <Icon icon={isDragActive ? 'tabler:file-download' : 'tabler:upload'} fontSize={32} />
+              <Icon icon={isDragActive ? 'tabler:file-download' : 'tabler:files'} fontSize={32} />
             </Box>
             <Typography variant='h6' sx={{ fontWeight: 600 }}>
-              {isDragActive ? 'Suelte el archivo PDF aquí' : 'Arrastre un archivo PDF o haga clic para examinar'}
+              {isDragActive
+                ? 'Suelte los archivos PDF aquí'
+                : 'Arrastre uno o varios archivos PDF aquí, o haga clic para examinar'}
             </Typography>
             <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-              Formato admitido: <strong>.PDF</strong> (Tamaño máximo: {maxSizeMb} MB)
+              Selección múltiple admitida · Formato: <strong>.PDF</strong> (Hasta {maxSizeMb} MB por archivo)
             </Typography>
           </>
         )}

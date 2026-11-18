@@ -21,7 +21,15 @@ const PLATFORM_ONLY_SUBJECTS = ['companies', 'plans', 'permissions', 'notificati
  * Subjects operativos exclusivos de las Compañías (Tenants).
  * El Super Administrador NO es una compañía: no sube documentos ni gestiona usuarios o roles internos.
  */
-const TENANT_ONLY_SUBJECTS = ['documents', 'users', 'users_menu', 'roles', 'admin_section', 'ai_queries']
+const TENANT_ONLY_SUBJECTS = [
+  'documents',
+  'ftp_devices',
+  'users',
+  'users_menu',
+  'roles',
+  'admin_section',
+  'ai_queries'
+]
 
 const restrictSubjects = (cannot: any, subjects: string[]) => {
   subjects.forEach(subj => {

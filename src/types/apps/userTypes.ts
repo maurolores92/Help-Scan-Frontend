@@ -26,7 +26,6 @@ export type UsersType = {
   avatarColor?: ThemeColor
   signature?: string
   image?: string | null
-  clave?: string
   directPermissions?: any[]
   roleId?: number
   role?: any

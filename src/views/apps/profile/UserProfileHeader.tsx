@@ -28,6 +28,7 @@ import toast from 'react-hot-toast'
 // ** Custom Components
 import CustomAvatar from 'src/@core/components/mui/avatar'
 import { getInitials } from 'src/@core/utils/get-initials'
+import { getImageUrl } from 'src/utils/api-url'
 
 // ** Edit Drawer
 import AddUserDrawer from 'src/views/apps/user/list/AddUserDrawer'
@@ -68,11 +69,7 @@ const UserProfileHeader = () => {
 
   const fullName = [user.name, user.lastName].filter(Boolean).join(' ') || user.fullName
   const userStatus = user.status
-  const profileImgSrc = (user as any).image
-    ? ((user as any).image.startsWith('http')
-      ? (user as any).image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${(user as any).image}`)
-    : (user.avatar || null)
+  const profileImgSrc = (user as any).image ? getImageUrl(`users/${(user as any).image}`) : (user.avatar || null)
 
   // Mapear UserDataType → UsersType para el drawer
   const editData: UsersType = {

@@ -5,6 +5,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
+import MenuItem from '@mui/material/MenuItem'
 import Grid from '@mui/material/Grid'
 import CircularProgress from '@mui/material/CircularProgress'
 import { Controller } from 'react-hook-form'
@@ -140,6 +141,22 @@ export const CompanyModal: React.FC<CompanyModalProps> = ({
                 )}
               />
             </Grid>
+
+            {isEdit && (
+              <Grid item xs={12} sm={4}>
+                <Controller
+                  name='status'
+                  control={control}
+                  render={({ field }) => (
+                    <TextField {...field} select fullWidth label='Estado de la Empresa'>
+                      <MenuItem value='ACTIVE'>Activa</MenuItem>
+                      <MenuItem value='INACTIVE'>Inactiva</MenuItem>
+                      <MenuItem value='SUSPENDED'>Suspendida</MenuItem>
+                    </TextField>
+                  )}
+                />
+              </Grid>
+            )}
 
             <CompanyPlanLimitsSection
               control={control}

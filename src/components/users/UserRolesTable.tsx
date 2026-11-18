@@ -14,6 +14,7 @@ import Icon from 'src/@core/components/icon'
 // ** Custom Components Imports
 import CustomChip from 'src/@core/components/mui/chip'
 import CustomAvatar from 'src/@core/components/mui/avatar'
+import { getImageUrl } from 'src/utils/api-url'
 import TableHeader from 'src/components/roles/TableHeader'
 import Tooltip from '@mui/material/Tooltip'
 
@@ -59,11 +60,7 @@ const userStatusLabels: Record<string, string> = {
 
 const renderClient = (row: any) => {
   const fullName = row.fullName || [row.name, row.lastName].filter(Boolean).join(' ') || 'John Doe'
-  const imgSrc = (row as any).image
-    ? ((row as any).image.startsWith('http')
-      ? (row as any).image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${(row as any).image}`)
-    : (row.avatar && row.avatar.length ? row.avatar : null)
+  const imgSrc = (row as any).image ? getImageUrl(`users/${(row as any).image}`) : (row.avatar && row.avatar.length ? row.avatar : null)
 
   if (imgSrc) {
     return <CustomAvatar src={imgSrc} sx={{ mr: 3, width: 38, height: 38 }} />

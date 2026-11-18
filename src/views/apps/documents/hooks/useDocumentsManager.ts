@@ -5,19 +5,32 @@ import { AppDispatch, RootState } from 'src/store'
 import {
   deleteDocument,
   DocumentItem,
+  fetchDocumentById,
   fetchDocumentFacets,
   fetchDocuments,
   reprocessDocument,
   syncFtpDocuments,
-  uploadDocument
+  uploadMultipleDocuments,
+  validateDocument,
+  rejectDocument,
+  ValidateDocumentPayload
 } from 'src/store/apps/documents'
 import { fetchMyCompanyQuota } from 'src/store/apps/plans'
 
 export const useDocumentsManager = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const { data, facets, total, loading, uploading, syncingFtp, reprocessingId } = useSelector(
-    (state: RootState) => state.documents
-  )
+  const {
+    data,
+    facets,
+    statusFacets,
+    equipmentFacets,
+    total,
+    loading,
+    uploading,
+    syncingFtp,
+    validating,
+    reprocessingId
+  } = useSelector((state: RootState) => state.documents)
   const { myQuota } = useSelector((state: RootState) => state.plans)
   const latestNotification = useSelector(
     (state: RootState) => state.notifications.notifications[0]
@@ -26,6 +39,7 @@ export const useDocumentsManager = () => {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [documentType, setDocumentType] = useState('')
+  const [equipmentId, setEquipmentId] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [status, setStatus] = useState('')
@@ -35,6 +49,7 @@ export const useDocumentsManager = () => {
   const [showUpload, setShowUpload] = useState(false)
 
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
+  const [validatingDoc, setValidatingDoc] = useState<DocumentItem | null>(null)
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const lastHandledNotifId = useRef<number | null>(latestNotification?.id ?? null)
@@ -55,6 +70,7 @@ export const useDocumentsManager = () => {
         limit: pageSize,
         search: debouncedSearch,
         documentType,
+        equipmentId,
         dateFrom,
         dateTo,
         status,
@@ -63,7 +79,7 @@ export const useDocumentsManager = () => {
     )
     dispatch(fetchDocumentFacets(undefined))
     dispatch(fetchMyCompanyQuota())
-  }, [dispatch, page, pageSize, debouncedSearch, documentType, dateFrom, dateTo, status, source])
+  }, [dispatch, page, pageSize, debouncedSearch, documentType, equipmentId, dateFrom, dateTo, status, source])
 
   useEffect(() => {
     loadData()
@@ -92,6 +108,7 @@ export const useDocumentsManager = () => {
     setSearchInput('')
     setDebouncedSearch('')
     setDocumentType('')
+    setEquipmentId('')
     setDateFrom('')
     setDateTo('')
     setStatus('')
@@ -99,16 +116,60 @@ export const useDocumentsManager = () => {
     setPage(0)
   }
 
-  const handleUpload = async (file: File) => {
+  const handleValidate = async (payload: ValidateDocumentPayload) => {
+    try {
+      await dispatch(validateDocument(payload)).unwrap()
+      toast.success('Documento validado y confirmado exitosamente')
+      setValidatingDoc(null)
+      loadData()
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al validar el documento')
+    }
+  }
+
+  const handleReject = async (id: number, reason: string) => {
+    try {
+      await dispatch(rejectDocument({ id, reason })).unwrap()
+      toast.success('Documento marcado como rechazado')
+      setValidatingDoc(null)
+      loadData()
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al rechazar el documento')
+    }
+  }
+
+  const handleUpload = async (files: File[] | File) => {
+    const fileList = Array.isArray(files) ? files : [files]
+    if (fileList.length === 0) return
+
     try {
       const formData = new FormData()
-      formData.append('file', file)
-      await dispatch(uploadDocument(formData)).unwrap()
-      toast.success('PDF subido e ingresado a extracción inteligente con IA')
+      fileList.forEach(f => {
+        formData.append('files', f)
+      })
+
+      const res: any = await dispatch(uploadMultipleDocuments(formData)).unwrap()
+
+      if (res?.failedCount > 0 && res?.successCount > 0) {
+        toast.success(`Se subieron ${res.successCount} de ${res.total} documento(s) correctamente`)
+        const errorDetails = res.errors?.map((e: any) => `${e.fileName}: ${e.reason}`).join(' | ')
+        toast.error(`${res.failedCount} archivo(s) omitido(s): ${errorDetails}`, { duration: 6000 })
+      } else if (res?.failedCount > 0 && res?.successCount === 0) {
+        const errorMsg = res.errors?.[0]?.reason || 'Error al procesar los archivos'
+        toast.error(`No se pudo subir ningún archivo: ${errorMsg}`)
+      } else {
+        const count = res?.successCount ?? fileList.length
+        toast.success(
+          count === 1
+            ? 'PDF subido e ingresado a la cola de extracción OCR'
+            : `Se subieron ${count} documentos PDF e ingresaron a la cola de extracción OCR`
+        )
+      }
+
       setShowUpload(false)
       loadData()
     } catch (err: any) {
-      toast.error(err?.message || 'Error al subir el archivo PDF')
+      toast.error(err?.message || 'Error al subir los archivos PDF')
     }
   }
 
@@ -132,8 +193,21 @@ export const useDocumentsManager = () => {
   const handleReprocess = async (doc: DocumentItem) => {
     try {
       await dispatch(reprocessDocument(doc.id)).unwrap()
-      toast.success(`Reprocesando '${doc.originalName}' con IA...`)
+      toast.success(`Reprocesando '${doc.originalName}' con motor OCR...`)
       loadData()
+      setTimeout(async () => {
+        try {
+          const refreshed = await dispatch(fetchDocumentById(doc.id)).unwrap()
+          if (refreshed) {
+            if (validatingDoc?.id === doc.id) {
+              setValidatingDoc(refreshed)
+            }
+            if (previewDoc?.id === doc.id) {
+              setPreviewDoc(refreshed)
+            }
+          }
+        } catch {}
+      }, 1500)
     } catch (err: any) {
       toast.error(err?.message || 'Error al reprocesar el documento')
     }
@@ -155,22 +229,27 @@ export const useDocumentsManager = () => {
   }
 
   const hasActiveFilters = Boolean(
-    searchInput || documentType || dateFrom || dateTo || status || source
+    searchInput || documentType || equipmentId || dateFrom || dateTo || status || source
   )
 
   return {
     data,
     facets,
+    statusFacets,
+    equipmentFacets,
     total,
     loading,
     uploading,
     syncingFtp,
+    validating,
     reprocessingId,
     myQuota,
     searchInput,
     setSearchInput,
     documentType,
     setDocumentType,
+    equipmentId,
+    setEquipmentId,
     dateFrom,
     setDateFrom,
     dateTo,
@@ -187,6 +266,8 @@ export const useDocumentsManager = () => {
     setShowUpload,
     previewDoc,
     setPreviewDoc,
+    validatingDoc,
+    setValidatingDoc,
     docToDelete,
     setDocToDelete,
     isDeleting,
@@ -195,7 +276,9 @@ export const useDocumentsManager = () => {
     handleUpload,
     handleSyncFtp,
     handleReprocess,
-    handleDeleteConfirm
+    handleDeleteConfirm,
+    handleValidate,
+    handleReject
   }
 }
 

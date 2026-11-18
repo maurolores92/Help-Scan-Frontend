@@ -16,25 +16,26 @@ interface DocumentQuotaBannerProps {
 export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota }) => {
   if (!quota || quota.isSuperAdmin) return null
 
-  const docsFull =
-    !quota.documents.unlimited &&
-    quota.documents.max !== null &&
-    quota.documents.current >= quota.documents.max
+  const pagesMetric = quota.pages || quota.documents
+  const pagesFull =
+    !pagesMetric.unlimited &&
+    pagesMetric.max !== null &&
+    pagesMetric.current >= pagesMetric.max
 
   const storageFull =
     !quota.storageMb.unlimited &&
     quota.storageMb.max !== null &&
     quota.storageMb.current >= quota.storageMb.max
 
-  const isQuotaExhausted = docsFull || storageFull
+  const isQuotaExhausted = pagesFull || storageFull
 
   return (
     <Box sx={{ mb: 4 }}>
       {isQuotaExhausted && (
         <Alert severity='error' sx={{ mb: 3 }}>
-          Su compañía alcanzó el límite de almacenamiento o cantidad de documentos permitido por el{' '}
-          <strong>Plan {quota.plan?.name || 'Actual'}</strong>. Elimine archivos obsoletos o solicite
-          una ampliación de plan al administrador de la plataforma.
+          Su compañía alcanzó el límite mensual de hojas/páginas o almacenamiento permitido por el{' '}
+          <strong>Plan {quota.plan?.name || 'Actual'}</strong>. El contador de hojas es continuo y no
+          disminuye al borrar archivos. Solicite una ampliación de plan al administrador.
         </Alert>
       )}
 
@@ -44,7 +45,7 @@ export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota 
             <Grid item xs={12} md={3}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Typography variant='caption' sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                  CAPACIDAD DOCUMENTAL DEL PLAN
+                  CAPACIDAD DEL PLAN (HOJAS)
                 </Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Chip
@@ -53,15 +54,23 @@ export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota 
                     label={quota.plan ? `Plan ${quota.plan.name}` : 'Plan Base'}
                     sx={{ fontWeight: 600 }}
                   />
+                  {quota.totalPagesUploaded !== undefined && quota.totalPagesUploaded > 0 && (
+                    <Chip
+                      size='small'
+                      variant='outlined'
+                      color='default'
+                      label={`Total histórico: ${quota.totalPagesUploaded} hojas`}
+                    />
+                  )}
                 </Box>
               </Box>
             </Grid>
 
             <Grid item xs={12} sm={6} md={4.5}>
               <QuotaProgressBar
-                label='Cantidad de PDFs'
-                current={quota.documents.current}
-                max={quota.documents.max}
+                label='Hojas / Páginas Escaneadas (Mes)'
+                current={pagesMetric.current}
+                max={pagesMetric.max}
               />
             </Grid>
 

@@ -43,53 +43,81 @@ export const fetchData = createAsyncThunk('appUsers/fetchData', async (params: D
   }
 })
 
+const extractApiErrorMessage = (err: any, fallback: string): string => {
+  const msg = err?.response?.data?.message
+  if (Array.isArray(msg) && msg.length > 0) {
+    return msg.join(', ')
+  }
+
+  return (typeof msg === 'string' && msg) || err?.message || fallback
+}
+
+const refreshUsersIfLoaded = (getState: () => any, dispatch: Dispatch<any>) => {
+  const userState = getState()?.user
+  if (userState && Array.isArray(userState.data) && userState.data.length > 0 && userState.params) {
+    try {
+      dispatch(fetchData(userState.params))
+    } catch (e) {}
+  }
+}
+
 // ** Add User
 export const addUser = createAsyncThunk(
   'appUsers/addUser',
-  async (data: any, { getState, dispatch }: Redux) => {
-    const response = await apiConnector.post('/users', data)
-    dispatch(fetchData(getState().user.params))
+  async (data: any, { getState, dispatch, rejectWithValue }: Redux & { rejectWithValue: any }) => {
+    try {
+      const response = await apiConnector.post('/users', data)
+      refreshUsersIfLoaded(getState, dispatch)
 
-    return response
+      return response
+    } catch (err: any) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Error al crear el usuario'))
+    }
   }
 )
 
 // ** Update User
 export const updateUser = createAsyncThunk(
   'appUsers/updateUser',
-  async ({ id, data }: { id: number | string; data: any }, { getState, dispatch }: Redux) => {
-    const response = await apiConnector.put(`/users/${id}`, data)
-    dispatch(fetchData(getState().user.params))
+  async (
+    { id, data }: { id: number | string; data: any },
+    { getState, dispatch, rejectWithValue }: Redux & { rejectWithValue: any }
+  ) => {
+    try {
+      const response = await apiConnector.put(`/users/${id}`, data)
+      refreshUsersIfLoaded(getState, dispatch)
 
-    return response
+      return response
+    } catch (err: any) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Error al actualizar el usuario'))
+    }
   }
 )
 
 // ** Change User Password
 export const changeUserPassword = createAsyncThunk(
   'appUsers/changeUserPassword',
-  async ({ id, data }: { id: number | string; data: any }, { getState, dispatch }: Redux) => {
-    const response = await apiConnector.put(`/users/${id}/change-password`, data)
-    dispatch(fetchData(getState().user.params))
+  async (
+    { id, data }: { id: number | string; data: any },
+    { getState, dispatch, rejectWithValue }: Redux & { rejectWithValue: any }
+  ) => {
+    try {
+      const response = await apiConnector.put(`/users/${id}/change-password`, data)
+      refreshUsersIfLoaded(getState, dispatch)
 
-    return response
+      return response
+    } catch (err: any) {
+      return rejectWithValue(extractApiErrorMessage(err, 'Error al cambiar la contraseña'))
+    }
   }
 )
-
 
 // ** Update User Signature
 export const updateUserSignature = createAsyncThunk(
   'appUsers/updateUserSignature',
   async ({ id, data }: { id: number | string; data: { signature: string | null } }, { getState, dispatch }: Redux) => {
     const response = await apiConnector.put(`/users/${id}/signature`, data)
-
-    // Solo recargar la lista general si el usuario está en el módulo de gestión de usuarios
-    const userState = getState()?.user
-    if (userState && Array.isArray(userState.data) && userState.data.length > 0) {
-      try {
-        dispatch(fetchData(userState.params))
-      } catch (e) {}
-    }
+    refreshUsersIfLoaded(getState, dispatch)
 
     return response
   }
@@ -100,7 +128,7 @@ export const deleteUser = createAsyncThunk(
   'appUsers/deleteUser',
   async (id: number | string, { getState, dispatch }: Redux) => {
     const response = await apiConnector.remove(`/users/${id}`)
-    dispatch(fetchData(getState().user.params))
+    refreshUsersIfLoaded(getState, dispatch)
 
     return response
   }

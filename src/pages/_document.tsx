@@ -27,11 +27,11 @@ class CustomDocument extends Document {
           {/* SEO & Meta Tags */}
           <meta
             name='description'
-            content='HC-SCAN (Helpcopies Scan) - Sistema SaaS multitenant para ingesta inteligente de documentos PDF (Web y FTP), extracción automatizada con IA y consultas avanzadas.'
+            content='HC-SCAN (Helpcopies Scan) - Sistema multitenant para ingesta de documentos PDF (Web y FTP), extracción automatizada con OCR y consulta estructurada.'
           />
           <meta
             name='keywords'
-            content='HC-SCAN, Helpcopies Scan, ingesta PDF, inteligencia artificial, OCR documental, multitenancy, sincronización FTP, extracción de datos IA, SaaS empresarial'
+            content='HC-SCAN, Helpcopies Scan, ingesta PDF, OCR documental, multitenancy, sincronización FTP, extracción de datos OCR, gestión documental empresarial'
           />
           <meta name='author' content='HC-SCAN Team' />
           <meta name='robots' content='index, follow' />
@@ -39,28 +39,28 @@ class CustomDocument extends Document {
           {/* Open Graph / Facebook */}
           <meta property='og:type' content='website' />
           <meta property='og:site_name' content='HC-SCAN' />
-          <meta property='og:title' content='HC-SCAN | Inteligencia Documental & Extracción con IA' />
+          <meta property='og:title' content='HC-SCAN | Gestión Documental & Extracción OCR' />
           <meta
             property='og:description'
-            content='Plataforma corporativa multitenant de almacenamiento e ingesta inteligente de documentos PDF con IA.'
+            content='Plataforma corporativa multitenant de almacenamiento e ingesta de documentos PDF con OCR.'
           />
           <meta property='og:locale' content='es_ES' />
 
           {/* Twitter Card */}
           <meta name='twitter:card' content='summary_large_image' />
-          <meta name='twitter:title' content='HC-SCAN | Inteligencia Documental & Extracción con IA' />
+          <meta name='twitter:title' content='Help Scan | Gestión Documental & Extracción OCR' />
           <meta
             name='twitter:description'
-            content='Plataforma corporativa multitenant de almacenamiento e ingesta inteligente de documentos PDF con IA.'
+            content='Plataforma corporativa multitenant de almacenamiento e ingesta de documentos PDF con OCR.'
           />
 
           {/* PWA Manifest & Mobile Configuration */}
           <link rel='manifest' href='/manifest.json' />
-          <meta name='theme-color' content='#4F46E5' />
-          <meta name='application-name' content='HC-SCAN' />
+          <meta name='theme-color' content='#32A048' />
+          <meta name='application-name' content='Help Scan' />
           <meta name='apple-mobile-web-app-capable' content='yes' />
           <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
-          <meta name='apple-mobile-web-app-title' content='HC-SCAN' />
+          <meta name='apple-mobile-web-app-title' content='Help Scan' />
           <meta name='format-detection' content='telephone=no' />
           <meta name='mobile-web-app-capable' content='yes' />
         </Head>

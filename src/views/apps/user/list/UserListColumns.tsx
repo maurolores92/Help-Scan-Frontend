@@ -23,17 +23,14 @@ import { useAuth } from 'src/hooks/useAuth'
 import { getInitials } from 'src/@core/utils/get-initials'
 
 import { UsersType } from 'src/types/apps/userTypes'
+import { getImageUrl } from 'src/utils/api-url'
 
 interface CellType {
   row: UsersType
 }
 
 const renderClient = (row: UsersType) => {
-  const imgSrc = (row as any).image
-    ? ((row as any).image.startsWith('http')
-      ? (row as any).image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${(row as any).image}`)
-    : (row.avatar?.length ? row.avatar : null)
+  const imgSrc = (row as any).image ? getImageUrl(`users/${(row as any).image}`) : (row.avatar?.length ? row.avatar : null)
 
   if (imgSrc) {
     return <CustomAvatar src={imgSrc} sx={{ mr: 2.5, width: 38, height: 38 }} />

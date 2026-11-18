@@ -23,8 +23,11 @@ interface StatusConfig {
 }
 
 const STATUS_CONFIGS: Record<string, StatusConfig> = {
-  PENDING: { label: 'Pendiente', color: 'warning' },
-  PROCESSING: { label: 'Procesando IA', color: 'info' },
+  PENDING: { label: 'En Cola', color: 'warning' },
+  PROCESSING: { label: 'Procesando OCR', color: 'info' },
+  PENDING_APPROVAL: { label: 'Por Aprobar', color: 'warning' },
+  VALIDATED: { label: 'Validado', color: 'success' },
+  REJECTED: { label: 'Rechazado', color: 'error' },
   PROCESSED: { label: 'Procesado', color: 'success' },
   ERROR: { label: 'Error', color: 'error' },
   ACTIVE: { label: 'Activo', color: 'success' },
@@ -32,7 +35,7 @@ const STATUS_CONFIGS: Record<string, StatusConfig> = {
   SUSPENDED: { label: 'Suspendida', color: 'error' },
   BLOCKED: { label: 'Bloqueado', color: 'error' },
   APP_UPLOAD: { label: 'Subida Web', color: 'primary' },
-  FTP: { label: 'SFTP / Bandeja', color: 'secondary' }
+  FTP: { label: 'Escáner FTP', color: 'secondary' }
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({

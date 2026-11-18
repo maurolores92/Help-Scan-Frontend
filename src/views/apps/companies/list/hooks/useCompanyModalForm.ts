@@ -27,6 +27,7 @@ export const useCompanyModalForm = (
       address: '',
       phone: '',
       email: '',
+      status: 'ACTIVE',
       planId: '' as any,
       useCustomLimits: false,
       maxUsers: 15 as number | null,
@@ -59,6 +60,7 @@ export const useCompanyModalForm = (
             address: companyData.address || '',
             phone: companyData.phone || '',
             email: companyData.email || '',
+            status: companyData.status || 'ACTIVE',
             planId: companyData.planId ?? defaultPlan?.id ?? '',
             useCustomLimits: Boolean(companyData.useCustomLimits),
             maxUsers: companyData.maxUsers !== undefined ? companyData.maxUsers : (defaultPlan?.maxUsers ?? 15),
@@ -90,7 +92,7 @@ export const useCompanyModalForm = (
           })
         }
       })
-      .catch(() => {})
+      .catch(() => undefined)
   }, [open, companyData, form])
 
   const handleNameChange = (val: string, onChange: (val: string) => void) => {
@@ -125,6 +127,7 @@ export const useCompanyModalForm = (
           address: data.address,
           phone: data.phone,
           email: data.email || undefined,
+          status: data.status,
           enabledModules: data.enabledModules,
           ...limitsPayload
         })

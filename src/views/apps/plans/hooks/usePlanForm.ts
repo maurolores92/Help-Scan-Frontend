@@ -18,7 +18,9 @@ const planSchema = yup.object().shape({
     .matches(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
   description: yup.string().nullable().optional(),
   priceMonthly: yup.number().typeError('Ingrese un monto válido').min(0, 'Mínimo 0').required(),
+  currency: yup.string().oneOf(['USD', 'ARS']).default('USD'),
   maxUsers: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
+  maxPages: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
   maxDocuments: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
   maxStorageMb: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1 MB'),
   maxAiQueriesMonthly: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(0, 'Mínimo 0'),
@@ -33,7 +35,9 @@ export interface PlanFormValues {
   slug: string
   description?: string | null
   priceMonthly: number
+  currency?: 'ARS' | 'USD'
   maxUsers: number | null
+  maxPages?: number | null
   maxDocuments: number | null
   maxStorageMb: number | null
   maxAiQueriesMonthly: number | null
@@ -54,7 +58,9 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
       slug: '',
       description: '',
       priceMonthly: 49,
+      currency: 'USD',
       maxUsers: 10,
+      maxPages: 1000,
       maxDocuments: 1000,
       maxStorageMb: 5120,
       maxAiQueriesMonthly: 500,
@@ -73,8 +79,10 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
         slug: editPlan.slug,
         description: editPlan.description || '',
         priceMonthly: Number(editPlan.priceMonthly || 0),
+        currency: (editPlan.currency as any) || 'USD',
         maxUsers: editPlan.maxUsers,
-        maxDocuments: editPlan.maxDocuments,
+        maxPages: editPlan.maxPages ?? editPlan.maxDocuments,
+        maxDocuments: editPlan.maxPages ?? editPlan.maxDocuments,
         maxStorageMb: editPlan.maxStorageMb,
         maxAiQueriesMonthly: editPlan.maxAiQueriesMonthly,
         includedModules: editPlan.includedModules || DEFAULT_MODULES,
@@ -88,7 +96,9 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
         slug: '',
         description: '',
         priceMonthly: 49,
+        currency: 'USD',
         maxUsers: 10,
+        maxPages: 1000,
         maxDocuments: 1000,
         maxStorageMb: 5120,
         maxAiQueriesMonthly: 500,
@@ -115,11 +125,16 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
 
   const onSubmit = async (values: PlanFormValues) => {
     try {
+      const payload = {
+        ...values,
+        maxPages: values.maxPages ?? values.maxDocuments,
+        maxDocuments: values.maxPages ?? values.maxDocuments
+      }
       if (isEdit && editPlan) {
-        await dispatch(updatePlan({ id: editPlan.id, data: values })).unwrap()
+        await dispatch(updatePlan({ id: editPlan.id, data: payload })).unwrap()
         toast.success('Plan actualizado correctamente')
       } else {
-        await dispatch(createPlan(values)).unwrap()
+        await dispatch(createPlan(payload)).unwrap()
         toast.success('Plan creado exitosamente')
       }
       onClose()

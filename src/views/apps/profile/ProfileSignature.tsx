@@ -69,7 +69,7 @@ const ProfileSignature = () => {
       clearTimeout(timer)
       window.removeEventListener('resize', updateWidth)
     }
-  }, [editing, signature])
+  }, [editing, signature, user])
 
   // Inicializa el modo edición
   const handleStartEdit = () => {

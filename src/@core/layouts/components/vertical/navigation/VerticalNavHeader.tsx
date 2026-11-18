@@ -92,9 +92,12 @@ const VerticalNavHeader = (props: Props) => {
         userNavMenuBranding(props)
       ) : (
         <LinkStyled href='/'>
-          <Box sx={{ width: 32, height: 32, borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'primary.main', color: 'common.white', flexShrink: 0 }}>
-            <Icon icon='tabler:scan' fontSize={20} />
-          </Box>
+          <Box
+            component='img'
+            src='/images/HelpScan.png'
+            alt='Help Scan Logo'
+            sx={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }}
+          />
           <HeaderTitle variant='h6' sx={{ fontWeight: 800, letterSpacing: '-0.5px', ...menuCollapsedStyles, ...(navCollapsed && !navHover ? {} : { ml: 2.5 }) }}>
             {themeConfig.templateName}
           </HeaderTitle>

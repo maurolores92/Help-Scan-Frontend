@@ -30,11 +30,11 @@ const navigation = (): VerticalNavItemsType => {
       subject: 'documents'
     },
     {
-      title: 'Chat IA Documental',
-      icon: 'tabler:messages',
-      path: '/chat',
+      title: 'Impresoras HP y FTP',
+      icon: 'tabler:printer',
+      path: '/printers-ftp',
       action: 'read',
-      subject: 'ai_queries'
+      subject: 'ftp_devices'
     },
 
     // ==========================================

@@ -26,9 +26,12 @@ export interface CompanyQuotaSummaryType {
   } | null
   useCustomLimits: boolean
   users: QuotaMetricType
+  pages?: QuotaMetricType
   documents: QuotaMetricType
   storageMb: StorageQuotaMetricType
   aiQueries: AiQuotaMetricType
+  totalPagesUploaded?: number
+  activeDocumentsCount?: number
 }
 
 export interface PlanType {
@@ -37,7 +40,12 @@ export interface PlanType {
   slug: string
   description?: string | null
   priceMonthly: number
+  currency?: 'ARS' | 'USD'
+  priceInPesos?: number
+  exchangeRateApplied?: number
+  roundPricesApplied?: boolean
   maxUsers: number | null
+  maxPages?: number | null
   maxDocuments: number | null
   maxStorageMb: number | null
   maxAiQueriesMonthly: number | null
@@ -49,4 +57,13 @@ export interface PlanType {
   createdAt?: string
   updatedAt?: string
 }
+
+export interface PlanExchangeConfigType {
+  id: number
+  usdRate: number
+  roundPrices: boolean
+  updatedBy: number | null
+  updatedAt?: string
+}
+
 

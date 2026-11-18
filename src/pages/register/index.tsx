@@ -234,7 +234,7 @@ const RegisterPage = () => {
                       6 Días de Prueba Completa
                     </Typography>
                     <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                      Acceso total a digitalización de comprobantes y consultas IA.
+                      Acceso total a digitalización de comprobantes y extracción OCR.
                     </Typography>
                   </Box>
                 </FeatureCard>

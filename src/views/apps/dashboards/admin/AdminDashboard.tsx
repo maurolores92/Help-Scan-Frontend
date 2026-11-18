@@ -41,7 +41,7 @@ export const AdminDashboard = () => {
           errorDocuments: error
         })
       })
-      .catch(() => {})
+      .catch(() => undefined)
   }, [])
 
   return (
@@ -69,7 +69,7 @@ export const AdminDashboard = () => {
                   Bienvenido a HC-SCAN 👋
                 </Typography>
                 <Typography variant='body1' sx={{ color: 'rgba(255,255,255,0.85)', maxWidth: 600 }}>
-                  Sistema Multicompañía de Ingesta Inteligente de Documentos PDF y Extracción Automatizada con Inteligencia Artificial.
+                  Sistema Multicompañía de Ingesta y Digitalización de Documentos PDF con Reconocimiento OCR y Búsqueda Estructurada.
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 2 }}>

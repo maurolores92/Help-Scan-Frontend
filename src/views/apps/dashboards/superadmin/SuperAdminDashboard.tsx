@@ -40,7 +40,7 @@ export const SuperAdminDashboard: React.FC = () => {
         const rows = Array.isArray(res) ? res : res?.data || []
         setCompanies(rows)
       })
-      .catch(() => {})
+      .catch(() => undefined)
 
     apiConnector
       .get<any>('/plans')
@@ -48,7 +48,7 @@ export const SuperAdminDashboard: React.FC = () => {
         const list = Array.isArray(res) ? res : res?.data || []
         setTotalPlans(list.length)
       })
-      .catch(() => {})
+      .catch(() => undefined)
   }, [])
 
   const metrics: SuperAdminPlatformMetrics = useMemo(() => {
@@ -151,7 +151,7 @@ export const SuperAdminDashboard: React.FC = () => {
                   <TableCell>Usuarios</TableCell>
                   <TableCell>Documentos</TableCell>
                   <TableCell>Storage</TableCell>
-                  <TableCell>Consultas IA (Mes)</TableCell>
+                  <TableCell>OCR / Mes</TableCell>
                   <TableCell align='right'>Acción</TableCell>
                 </TableRow>
               </TableHead>

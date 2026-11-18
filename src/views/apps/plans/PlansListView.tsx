@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
@@ -9,14 +9,17 @@ import Button from '@mui/material/Button'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
+import Chip from '@mui/material/Chip'
 import toast from 'react-hot-toast'
 import Icon from 'src/@core/components/icon'
 import { AppDispatch, RootState } from 'src/store'
 import { deletePlan, fetchPlans } from 'src/store/apps/plans'
-import { PlanType } from 'src/types/apps/planTypes'
+import { PlanExchangeConfigType, PlanType } from 'src/types/apps/planTypes'
 import ConfirmActionDialog from 'src/components/common/ConfirmActionDialog'
+import apiConnector from 'src/services/api.service'
 import PlanCard from './components/PlanCard'
 import PlanFormDrawer from './PlanFormDrawer'
+import ExchangeRateModal from './components/ExchangeRateModal'
 
 export const PlansListView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -27,6 +30,21 @@ export const PlansListView: React.FC = () => {
   const [selectedPlan, setSelectedPlan] = useState<PlanType | null>(null)
   const [planToDelete, setPlanToDelete] = useState<PlanType | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [exchangeModalOpen, setExchangeModalOpen] = useState(false)
+  const [exchangeConfig, setExchangeConfig] = useState<PlanExchangeConfigType | null>(null)
+
+  const loadExchangeConfig = useCallback(async () => {
+    try {
+      const config = await apiConnector.get<PlanExchangeConfigType>('/plans/exchange-rate')
+      setExchangeConfig(config)
+    } catch (e) {
+      console.error('Error al consultar cotización del dólar', e)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadExchangeConfig()
+  }, [loadExchangeConfig])
 
   useEffect(() => {
     dispatch(fetchPlans({ search, includeInactive: true }))
@@ -81,13 +99,33 @@ export const PlansListView: React.FC = () => {
                 onChange={e => setSearch(e.target.value)}
                 sx={{ minWidth: 300 }}
               />
-              <Button
-                variant='contained'
-                startIcon={<Icon icon='tabler:plus' />}
-                onClick={handleOpenCreate}
-              >
-                Nuevo Plan
-              </Button>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                {exchangeConfig && (
+                  <Chip
+                    icon={<Icon icon='tabler:currency-dollar' />}
+                    label={`1 USD = $${Number(exchangeConfig.usdRate).toLocaleString('es-AR')} ARS ${exchangeConfig.roundPrices ? '(Redondeo)' : ''}`}
+                    color='primary'
+                    variant='outlined'
+                    size='small'
+                    sx={{ fontWeight: 600 }}
+                  />
+                )}
+                <Button
+                  variant='outlined'
+                  color='primary'
+                  startIcon={<Icon icon='tabler:coin' />}
+                  onClick={() => setExchangeModalOpen(true)}
+                >
+                  Cotización Dólar
+                </Button>
+                <Button
+                  variant='contained'
+                  startIcon={<Icon icon='tabler:plus' />}
+                  onClick={handleOpenCreate}
+                >
+                  Nuevo Plan
+                </Button>
+              </Box>
             </Box>
           </CardContent>
         </Card>
@@ -126,6 +164,15 @@ export const PlansListView: React.FC = () => {
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         editPlan={selectedPlan}
+      />
+
+      <ExchangeRateModal
+        open={exchangeModalOpen}
+        onClose={() => setExchangeModalOpen(false)}
+        onSuccess={config => {
+          setExchangeConfig(config)
+          dispatch(fetchPlans({ search, includeInactive: true }))
+        }}
       />
 
       <ConfirmActionDialog

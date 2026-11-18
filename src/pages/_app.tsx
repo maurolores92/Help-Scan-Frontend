@@ -145,12 +145,12 @@ const App = (props: ExtendedAppProps) => {
     <Provider store={store}>
       <CacheProvider value={emotionCache}>
         <Head>
-          <title>{`${themeConfig.templateName} - Inteligencia Documental & Extracción con IA`}</title>
+          <title>{`${themeConfig.templateName} - Gestión Documental & Extracción OCR`}</title>
           <meta
             name='description'
-            content='HC-SCAN (Helpcopies Scan) – Plataforma SaaS multitenant para almacenamiento de PDFs, sincronización FTP y extracción automatizada con IA.'
+            content='HC-SCAN (Helpcopies Scan) – Plataforma multitenant para almacenamiento de PDFs, digitalización por FTP/web y extracción automatizada con OCR.'
           />
-          <meta name='keywords' content='HC-SCAN, Helpcopies Scan, PDFs, Ingesta FTP, Inteligencia Artificial, OCR, SaaS Multitenancy' />
+          <meta name='keywords' content='HC-SCAN, Helpcopies Scan, PDFs, Ingesta FTP, OCR, Digitalización de Documentos, Multitenancy' />
           <meta name='viewport' content='initial-scale=1, width=device-width' />
         </Head>
 

@@ -18,13 +18,6 @@ const navigation = (): HorizontalNavItemsType => {
       subject: 'documents'
     },
     {
-      title: 'Chat IA Documental',
-      icon: 'tabler:messages',
-      path: '/chat',
-      action: 'read',
-      subject: 'ai_queries'
-    },
-    {
       title: 'Plataforma',
       icon: 'tabler:building-community',
       action: 'manage',

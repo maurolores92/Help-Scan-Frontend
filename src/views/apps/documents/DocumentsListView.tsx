@@ -7,6 +7,7 @@ import { DataGrid } from '@mui/x-data-grid'
 import ConfirmActionDialog from 'src/components/common/ConfirmActionDialog'
 import DocumentDropzone from 'src/components/documents/DocumentDropzone'
 import PdfViewerModal from 'src/components/documents/PdfViewerModal'
+import DocumentValidationModal from 'src/components/documents/DocumentValidationModal'
 import DocumentStatsHeader from './DocumentStatsHeader'
 import DocumentFilterToolbar from './DocumentFilterToolbar'
 import DocumentQuotaBanner from './DocumentQuotaBanner'
@@ -21,12 +22,15 @@ export const DocumentsListView = () => {
     loading,
     uploading,
     syncingFtp,
+    validating,
     reprocessingId,
     myQuota,
     searchInput,
     setSearchInput,
     documentType,
     setDocumentType,
+    equipmentId,
+    setEquipmentId,
     dateFrom,
     setDateFrom,
     dateTo,
@@ -43,6 +47,8 @@ export const DocumentsListView = () => {
     setShowUpload,
     previewDoc,
     setPreviewDoc,
+    validatingDoc,
+    setValidatingDoc,
     docToDelete,
     setDocToDelete,
     isDeleting,
@@ -51,18 +57,21 @@ export const DocumentsListView = () => {
     handleUpload,
     handleSyncFtp,
     handleReprocess,
-    handleDeleteConfirm
+    handleDeleteConfirm,
+    handleValidate,
+    handleReject
   } = useDocumentsManager()
 
   const columns = useMemo(
     () =>
       buildDocumentsColumns({
         onPreview: doc => setPreviewDoc(doc),
+        onValidate: doc => setValidatingDoc(doc),
         onReprocess: doc => handleReprocess(doc),
         onDelete: doc => setDocToDelete(doc),
         reprocessingId
       }),
-    [handleReprocess, reprocessingId, setDocToDelete, setPreviewDoc]
+    [handleReprocess, reprocessingId, setDocToDelete, setPreviewDoc, setValidatingDoc]
   )
 
   return (
@@ -72,8 +81,8 @@ export const DocumentsListView = () => {
 
       <Card>
         <CardHeader
-          title='Bóveda Inteligente de Documentos PDF'
-          subheader='Detección automática en carpeta / SFTP, extracción OCR multimodal y búsqueda universal por cualquier dato'
+          title='Bóveda de Documentos PDF'
+          subheader='Detección automática en carpeta / SFTP, extracción OCR y búsqueda universal por cualquier dato'
         />
 
         <Collapse in={showUpload}>
@@ -91,6 +100,11 @@ export const DocumentsListView = () => {
             setPage(0)
           }}
           facets={facets}
+          equipmentId={equipmentId}
+          onEquipmentIdChange={val => {
+            setEquipmentId(val)
+            setPage(0)
+          }}
           dateFrom={dateFrom}
           onDateFromChange={val => {
             setDateFrom(val)
@@ -121,7 +135,7 @@ export const DocumentsListView = () => {
 
         <DataGrid
           autoHeight
-          rowHeight={68}
+          rowHeight={72}
           rows={data}
           rowCount={total}
           columns={columns}
@@ -143,6 +157,17 @@ export const DocumentsListView = () => {
         onClose={() => setPreviewDoc(null)}
         onReprocess={handleReprocess}
         reprocessing={Boolean(previewDoc && reprocessingId === previewDoc.id)}
+      />
+
+      <DocumentValidationModal
+        open={Boolean(validatingDoc)}
+        document={validatingDoc}
+        onClose={() => setValidatingDoc(null)}
+        onValidate={handleValidate}
+        onReject={handleReject}
+        isValidating={validating}
+        onReprocess={handleReprocess}
+        reprocessing={Boolean(validatingDoc && reprocessingId === validatingDoc.id)}
       />
 
       <ConfirmActionDialog

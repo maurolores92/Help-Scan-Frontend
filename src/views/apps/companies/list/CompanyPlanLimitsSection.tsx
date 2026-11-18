@@ -38,7 +38,7 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
       setValue('enabledModules', found.includedModules)
       if (!useCustomLimits) {
         setValue('maxUsers', found.maxUsers)
-        setValue('maxDocuments', found.maxDocuments)
+        setValue('maxDocuments', found.maxPages ?? found.maxDocuments)
         setValue('maxStorageMb', found.maxStorageMb)
         setValue('maxAiQueriesMonthly', found.maxAiQueriesMonthly)
       }
@@ -131,7 +131,7 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
                   size='small'
                   color='primary'
                   variant='outlined'
-                  label={`PDFs: ${activePlan.maxDocuments ?? 'Ilimitado'}`}
+                  label={`Hojas/Páginas: ${activePlan.maxPages ?? activePlan.maxDocuments ?? 'Ilimitado'}`}
                 />
                 <Chip
                   size='small'
@@ -165,8 +165,9 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
               <Grid item xs={12} sm={6} md={3}>
                 <PlanQuotaLimitField
                   name='maxDocuments'
-                  label='Máx. PDFs'
-                  defaultNumericValue={activePlan?.maxDocuments ?? 1000}
+                  label='Máx. Hojas / Páginas'
+                  helperText='Límite mensual acumulativo'
+                  defaultNumericValue={activePlan?.maxPages ?? activePlan?.maxDocuments ?? 1000}
                   control={control}
                   errorMessage={errors?.maxDocuments?.message}
                 />
@@ -183,7 +184,7 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
               <Grid item xs={12} sm={6} md={3}>
                 <PlanQuotaLimitField
                   name='maxAiQueriesMonthly'
-                  label='Consultas IA/mes'
+                  label='Procesamiento OCR/mes'
                   defaultNumericValue={activePlan?.maxAiQueriesMonthly ?? 500}
                   allowZero
                   control={control}

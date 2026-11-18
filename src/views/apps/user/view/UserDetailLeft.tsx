@@ -15,6 +15,7 @@ import Chip from '@mui/material/Chip'
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
+import { getImageUrl } from 'src/utils/api-url'
 
 // ** Custom Components
 import CustomAvatar from 'src/@core/components/mui/avatar'
@@ -72,11 +73,7 @@ const UserDetailLeft = ({ user, onUserUpdated }: Props) => {
   const fullName = [user.name, user.lastName].filter(Boolean).join(' ') || user.fullName
   const userStatus = user.status?.toUpperCase()
 
-  const avatarSrc = (user as any).image
-    ? ((user as any).image.startsWith('http')
-      ? (user as any).image
-      : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${(user as any).image}`)
-    : (user.avatar || null)
+  const avatarSrc = (user as any).image ? getImageUrl(`users/${(user as any).image}`) : (user.avatar || null)
 
   const roleName = typeof user.role === 'object' ? (user.role as any)?.name : user.role
 

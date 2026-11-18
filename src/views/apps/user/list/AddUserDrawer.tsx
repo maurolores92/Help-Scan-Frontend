@@ -23,6 +23,7 @@ import toast from 'react-hot-toast'
 
 // ** Icon Imports
 import Icon from 'src/@core/components/icon'
+import { getImageUrl } from 'src/utils/api-url'
 
 // ** Store Imports
 import { useDispatch } from 'react-redux'
@@ -37,7 +38,9 @@ interface SidebarAddUserType {
   toggle: () => void
   editData?: UsersType | null
   isPasswordMode?: boolean
+  defaultCompanyId?: number
   onUserUpdated?: (user: UsersType) => void
+  onUserCreated?: (user: any) => void
 }
 
 interface UserData {
@@ -49,7 +52,6 @@ interface UserData {
   roleId: number | string
   password?: string
   confirmPassword?: string
-  clave?: string
 }
 
 const ImgStyled = styled('img')(({ theme }) => ({
@@ -89,39 +91,39 @@ const isSuperAdminUser = (data?: UsersType | null, auth?: any): boolean => {
 const getSchema = (isEdit: boolean, isPasswordMode: boolean, isSuperAdmin = false) => {
   if (isPasswordMode) {
     return yup.object().shape({
-      password: yup.string().required('Password is required').min(5, 'Must be at least 5 characters'),
+      password: yup.string().required('La contraseña es obligatoria').min(5, 'Debe tener al menos 5 caracteres'),
       confirmPassword: yup
         .string()
-        .required('Confirm Password is required')
-        .oneOf([yup.ref('password'), ''], 'Passwords must match')
+        .required('Confirmar contraseña es obligatorio')
+        .oneOf([yup.ref('password'), ''], 'Las contraseñas deben coincidir')
     })
   }
 
   return yup.object().shape({
-    name: yup.string().required('Name is required'),
-    lastName: yup.string().required('Last Name is required'),
-    username: yup.string().required('Username is required'),
-    email: yup.string().email().required('Email is required'),
+    name: yup.string().required('El nombre es obligatorio'),
+    lastName: yup.string().required('El apellido es obligatorio'),
+    username: yup.string().required('El nombre de usuario es obligatorio'),
+    email: yup.string().email('Ingrese un correo electrónico válido').required('El correo es obligatorio'),
     phone: yup.string(),
     roleId: isSuperAdmin
       ? yup.mixed().notRequired()
       : yup
           .mixed()
-          .test('role-is-required', 'Role is required', function (value) {
+          .test('role-is-required', 'El rol es obligatorio', function (value) {
             if (isSuperAdmin) return true
             if (value === undefined || value === null || value === '') return false
 
             return !isNaN(Number(value))
           }),
-    clave: yup
-      .string()
-      .test('clave-min-max', 'La clave debe ser de exactamente 4 dígitos numéricos', val => {
-        if (!val || val.trim() === '') return true
-
-        return /^\d{4}$/.test(val.trim())
-      }),
-    password: isEdit ? yup.string() : yup.string().required('Password is required').min(5, 'Must be at least 5 characters'),
-    confirmPassword: isEdit ? yup.string() : yup.string().required('Confirm Password is required').oneOf([yup.ref('password'), ''], 'Passwords must match')
+    password: isEdit
+      ? yup.string()
+      : yup.string().required('La contraseña es obligatoria').min(6, 'Debe tener al menos 6 caracteres'),
+    confirmPassword: isEdit
+      ? yup.string()
+      : yup
+          .string()
+          .required('Confirmar contraseña es obligatorio')
+          .oneOf([yup.ref('password'), ''], 'Las contraseñas deben coincidir')
   })
 }
 
@@ -132,13 +134,12 @@ const defaultValues = {
   email: '',
   phone: '',
   roleId: '',
-  clave: '',
   password: '',
   confirmPassword: ''
 }
 
 const SidebarAddUser = (props: SidebarAddUserType) => {
-  const { open, toggle, editData, isPasswordMode } = props
+  const { open, toggle, editData, isPasswordMode, defaultCompanyId } = props
   const [roles, setRoles] = useState<any[]>([])
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false)
@@ -153,12 +154,18 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
   }, [editData, authUser])
 
   useEffect(() => {
-    if (!isPasswordMode) {
-      apiConnector.get('/role?includeSuperAdmin=true').then((res: any) => {
-        setRoles(res || [])
-      }).catch(err => console.error(err))
+    if (open && !isPasswordMode) {
+      const rolesEndpoint = defaultCompanyId
+        ? `/role?includeSuperAdmin=true&companyId=${defaultCompanyId}`
+        : '/role?includeSuperAdmin=true'
+      apiConnector
+        .get(rolesEndpoint)
+        .then((res: any) => {
+          setRoles(res || [])
+        })
+        .catch(err => console.error(err))
     }
-  }, [isPasswordMode])
+  }, [open, isPasswordMode, defaultCompanyId])
 
   const {
     reset,
@@ -201,15 +208,12 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
         clearErrors('roleId')
       }
 
-      setValue('clave', (editData as any).clave || '')
       setValue('password', '')
       setValue('confirmPassword', '')
 
       if (editData.image) {
         setImgSrc(
-          editData.image.startsWith('http')
-            ? editData.image
-            : `${process.env.NEXT_PUBLIC_API_URL}/images/users/${editData.image}`
+          getImageUrl(`users/${editData.image}`)
         )
       } else {
         setImgSrc('')
@@ -245,38 +249,39 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
     setSelectedFile(null)
   }
 
+  const uploadProfileImage = async (initialImage: string | null): Promise<{ aborted: boolean; fileName: string | null }> => {
+    if (!selectedFile) {
+      return { aborted: false, fileName: imgSrc === '' ? null : initialImage }
+    }
+    const formData = new FormData()
+    formData.append('file', selectedFile)
+    try {
+      const uploadRes: any = await apiConnector.sendFile('/uploads/users', formData)
+
+      return { aborted: false, fileName: uploadRes.fileName }
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al subir la imagen de perfil')
+
+      return { aborted: true, fileName: initialImage }
+    }
+  }
+
   const onSubmit = async (data: UserData) => {
     try {
       if (isPasswordMode && editData) {
         await dispatch(changeUserPassword({ id: editData.id, data: { password: data.password } })).unwrap()
         toast.success('Contraseña actualizada correctamente')
       } else if (editData) {
-        let finalImage: string | null = editData.image || null
-
-        if (selectedFile) {
-          const formData = new FormData()
-          formData.append('file', selectedFile)
-
-          try {
-            const uploadRes: any = await apiConnector.sendFile('/uploads/users', formData)
-            finalImage = uploadRes.fileName
-          } catch (err: any) {
-            toast.error(err?.message || 'Error al subir la imagen de perfil')
-
-            return
-          }
-        } else if (imgSrc === '') {
-          finalImage = null
-        }
+        const upload = await uploadProfileImage(editData.image || null)
+        if (upload.aborted) return
 
         const payload: any = {
           name: data.name,
           lastName: data.lastName,
           username: data.username,
           email: data.email,
-          phone: data.phone,
-          clave: data.clave && data.clave.trim() ? data.clave.trim() : null,
-          image: finalImage
+          phone: data.phone || '',
+          image: upload.fileName
         }
 
         if (!isSuperAdmin && data.roleId && !isNaN(Number(data.roleId))) {
@@ -293,45 +298,47 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
             email: data.email,
             username: data.username,
             phone: data.phone,
-            image: finalImage
+            image: upload.fileName
           })
         }
 
         if (props.onUserUpdated) {
-          props.onUserUpdated({ ...(editData as any), ...payload, image: finalImage })
+          props.onUserUpdated({ ...(editData as any), ...payload, image: upload.fileName })
         }
 
         toast.success('Usuario actualizado correctamente')
       } else {
-        let finalImage: string | null = null
+        const upload = await uploadProfileImage(null)
+        if (upload.aborted) return
 
-        if (selectedFile) {
-          const formData = new FormData()
-          formData.append('file', selectedFile)
-
-          try {
-            const uploadRes: any = await apiConnector.sendFile('/uploads/users', formData)
-            finalImage = uploadRes.fileName
-          } catch (err: any) {
-            toast.error(err?.message || 'Error al subir la imagen de perfil')
-
-            return
-          }
+        const createPayload: any = {
+          name: data.name,
+          lastName: data.lastName,
+          username: data.username,
+          email: data.email,
+          phone: data.phone || '',
+          password: data.password,
+          roleId: Number(data.roleId),
+          image: upload.fileName,
+          ...(defaultCompanyId ? { companyId: defaultCompanyId } : {})
         }
 
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { confirmPassword: _cp, ...payload } = data;
-        await dispatch(addUser({
-          ...payload,
-          roleId: Number(data.roleId),
-          clave: data.clave && data.clave.trim() ? data.clave.trim() : null,
-          image: finalImage
-        })).unwrap()
+        const createdUser: any = await dispatch(addUser(createPayload)).unwrap()
+        if (props.onUserCreated) {
+          props.onUserCreated(createdUser)
+        }
         toast.success('Usuario creado correctamente')
       }
       handleClose()
     } catch (error: any) {
-      toast.error(error.message || 'Error procesando la solicitud')
+      const msg = error?.response?.data?.message
+      const errMessage =
+        typeof error === 'string'
+          ? error
+          : Array.isArray(msg)
+            ? msg.join(', ')
+            : msg || error?.message || 'Error procesando la solicitud'
+      toast.error(errMessage)
     }
   }
 
@@ -507,55 +514,25 @@ const SidebarAddUser = (props: SidebarAddUserType) => {
                       select
                       fullWidth
                       value={value}
-                      sx={{ mb: 4 }}
+                      sx={{ mb: editData ? 6 : 4 }}
                       label='Rol'
                       onChange={onChange}
                       error={Boolean(errors.roleId)}
                       {...(errors.roleId && { helperText: errors.roleId?.message })}
                       SelectProps={{ value: value, onChange: e => onChange(e) }}
                     >
-                      <MenuItem value=''>Select Role</MenuItem>
-                      {roles.map((r: any) => (
-                        <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>
-                      ))}
+                      <MenuItem value=''>Seleccione un rol</MenuItem>
+                      {roles
+                        .filter((r: any) => r.slug !== 'superadmin' && r.name?.toLowerCase() !== 'superadmin')
+                        .map((r: any) => (
+                          <MenuItem key={r.id} value={String(r.id)}>
+                            {r.name}
+                          </MenuItem>
+                        ))}
                     </CustomTextField>
                   )}
                 />
               )}
-              <Controller
-                name='clave'
-                control={control}
-                render={({ field: { value, onChange } }) => (
-                  <CustomTextField
-                    fullWidth
-                    value={value || ''}
-                    sx={{ mb: 6 }}
-                    label='Clave (PIN 4 dígitos)'
-                    placeholder='Ej: 1234'
-                    inputProps={{
-                      maxLength: 4,
-                      inputMode: 'numeric'
-                    }}
-                    onChange={e => {
-                      const numericOnly = e.target.value.replace(/\D/g, '').slice(0, 4)
-                      onChange(numericOnly)
-                    }}
-                    error={Boolean(errors.clave)}
-                    helperText={
-                      errors.clave
-                        ? (errors.clave.message as string)
-                        : 'Clave numérica de 4 dígitos (mínimo 4 y máximo 4 dígitos) para identificar al operador'
-                    }
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>
-                          <Icon icon='tabler:key' />
-                        </InputAdornment>
-                      )
-                    }}
-                  />
-                )}
-              />
             </>
           )}
 

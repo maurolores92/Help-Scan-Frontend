@@ -10,6 +10,7 @@ import TextField from '@mui/material/TextField'
 import Link from 'next/link'
 import Icon from 'src/@core/components/icon'
 import useApi from 'src/hooks/useApi'
+import apiConnector from 'src/services/api.service'
 import toast from 'react-hot-toast'
 import CompanyModal from './CompanyModal'
 import ConfirmActionDialog from 'src/components/common/ConfirmActionDialog'
@@ -61,17 +62,19 @@ export const CompaniesListView = () => {
   const handleStatusToggle = useCallback(
     async (company: any) => {
       try {
-        const newStatus = company.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED'
-        await api.update(company.id, { status: newStatus })
+        const newStatus = company.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
+        await apiConnector.patch(`/companies/${company.id}/status`, { status: newStatus })
         toast.success(
-          `Compañía ${newStatus === 'ACTIVE' ? 'activada' : 'suspendida'} correctamente`
+          newStatus === 'ACTIVE'
+            ? `Compañía '${company.name}' activada y usuario administrador habilitado`
+            : `Compañía '${company.name}' suspendida correctamente`
         )
         fetchCompanies()
-      } catch {
-        toast.error('Error al cambiar el estado')
+      } catch (err: any) {
+        toast.error(err?.response?.data?.message || 'Error al cambiar el estado de la compañía')
       }
     },
-    [api, fetchCompanies]
+    [fetchCompanies]
   )
 
   const confirmDelete = async () => {
@@ -110,7 +113,7 @@ export const CompaniesListView = () => {
         <Card>
           <CardHeader
             title='Compañías Clientes (Tenants)'
-            subheader='Gestión centralizada de organizaciones, planes asociados, cuotas de storage y consultas IA'
+            subheader='Gestión centralizada de organizaciones, planes asociados, almacenamiento y procesamiento de comprobantes'
           />
           <CardContent>
             <Box

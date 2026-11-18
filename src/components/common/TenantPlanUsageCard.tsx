@@ -151,16 +151,34 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
               <>
                 <Grid item xs={12} sm={6}>
                   <Box sx={{ p: 3, borderRadius: 1.5, border: 1, borderColor: 'divider' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-                      <Icon icon='tabler:files' fontSize={20} />
-                      <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                        Cantidad de Documentos PDF
-                      </Typography>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mb: 1.5
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Icon icon='tabler:files' fontSize={20} />
+                        <Typography variant='body2' sx={{ fontWeight: 600 }}>
+                          Hojas / Páginas Escaneadas (Mes)
+                        </Typography>
+                      </Box>
+                      {summary.totalPagesUploaded !== undefined && (
+                        <Chip
+                          size='small'
+                          variant='outlined'
+                          color='secondary'
+                          label={`Histórico: ${summary.totalPagesUploaded} hojas`}
+                          sx={{ fontSize: '0.72rem' }}
+                        />
+                      )}
                     </Box>
                     <QuotaProgressBar
-                      label='Archivos indexados'
-                      current={summary.documents.current}
-                      max={summary.documents.max}
+                      label='Hojas acumuladas en el período'
+                      current={summary.pages?.current ?? summary.documents.current}
+                      max={summary.pages?.max ?? summary.documents.max}
                     />
                   </Box>
                 </Grid>
@@ -196,9 +214,9 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Icon icon='tabler:sparkles' fontSize={20} />
+                      <Icon icon='tabler:cpu' fontSize={20} />
                       <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                        Consultas IA Mensuales
+                        Extracción OCR de Documentos
                       </Typography>
                     </Box>
                     {summary.aiQueries.period && (
@@ -208,7 +226,7 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                     )}
                   </Box>
                   <QuotaProgressBar
-                    label='Consultas al Chat IA en el período'
+                    label='Procesamiento OCR en el período'
                     current={summary.aiQueries.current}
                     max={summary.aiQueries.max}
                   />
@@ -216,7 +234,7 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                     variant='caption'
                     sx={{ display: 'block', mt: 1.5, color: 'text.secondary' }}
                   >
-                    Documentos analizados por IA en el ciclo:{' '}
+                    Documentos digitalizados y procesados por OCR:{' '}
                     <strong>{summary.aiQueries.aiDocumentsProcessed ?? 0}</strong>
                   </Typography>
                 </Box>
