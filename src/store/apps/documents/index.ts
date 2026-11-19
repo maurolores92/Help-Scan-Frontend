@@ -72,9 +72,16 @@ export interface DocumentItem {
   referenceNumber?: string | null
   cae?: string | null
   taxCondition?: string | null
-  equipmentId?: string | null
-  equipmentModel?: string | null
-  meterCount?: string | null
+  documentLetter?: string | null
+  pointOfSale?: string | null
+  caeDueDate?: string | null
+  purchaseOrderNumber?: string | null
+  exemptAmount?: number | null
+  otherTaxesAmount?: number | null
+  carrierName?: string | null
+  department?: string | null
+  branch?: string | null
+  period?: string | null
   validatedByUserId?: number | null
   validatedAt?: string | null
   validationNotes?: string | null
@@ -103,7 +110,7 @@ export interface DocumentTypeFacet {
 export interface DocumentFacets {
   documentTypes: DocumentTypeFacet[]
   statuses: DocumentTypeFacet[]
-  equipmentIds: DocumentTypeFacet[]
+  departments: DocumentTypeFacet[]
 }
 
 export interface ValidateDocumentPayload {
@@ -129,9 +136,16 @@ export interface ValidateDocumentPayload {
   referenceNumber?: string
   cae?: string
   taxCondition?: string
-  equipmentId?: string
-  equipmentModel?: string
-  meterCount?: string
+  documentLetter?: string
+  pointOfSale?: string
+  caeDueDate?: string
+  purchaseOrderNumber?: string
+  exemptAmount?: number
+  otherTaxesAmount?: number
+  carrierName?: string
+  department?: string
+  branch?: string
+  period?: string
   summary?: string
   tags?: string[]
   items?: DocumentArticleItem[]
@@ -151,8 +165,9 @@ export interface FetchDocumentParams {
   source?: string
   search?: string
   documentType?: string
-  equipmentId?: string
-  equipmentModel?: string
+  purchaseOrderNumber?: string
+  department?: string
+  documentLetter?: string
   recipientTaxId?: string
   dateFrom?: string
   dateTo?: string
@@ -242,6 +257,16 @@ export const deleteDocument = createAsyncThunk(
   }
 )
 
+export const deleteMultipleDocuments = createAsyncThunk(
+  'documents/deleteMultipleDocuments',
+  async (ids: number[], { dispatch }: Redux) => {
+    const response: any = await apiConnector.post('/documents/bulk-delete', { ids })
+    dispatch(fetchDocumentFacets(undefined))
+
+    return response
+  }
+)
+
 export const validateDocument = createAsyncThunk(
   'documents/validateDocument',
   async ({ id, ...dto }: ValidateDocumentPayload, { dispatch }: Redux) => {
@@ -268,7 +293,7 @@ export const appDocumentsSlice = createSlice({
     data: [] as DocumentItem[],
     facets: [] as DocumentTypeFacet[],
     statusFacets: [] as DocumentTypeFacet[],
-    equipmentFacets: [] as DocumentTypeFacet[],
+    departmentFacets: [] as DocumentTypeFacet[],
     total: 0,
     params: {
       page: 1,
@@ -277,8 +302,8 @@ export const appDocumentsSlice = createSlice({
       status: '',
       source: '',
       documentType: '',
-      equipmentId: '',
-      equipmentModel: '',
+      purchaseOrderNumber: '',
+      department: '',
       recipientTaxId: '',
       dateFrom: '',
       dateTo: ''
@@ -317,7 +342,7 @@ export const appDocumentsSlice = createSlice({
       .addCase(fetchDocumentFacets.fulfilled, (state, action: any) => {
         state.facets = action.payload?.documentTypes || []
         state.statusFacets = action.payload?.statuses || []
-        state.equipmentFacets = action.payload?.equipmentIds || []
+        state.departmentFacets = action.payload?.departments || []
       })
       .addCase(fetchDocumentById.fulfilled, (state, action: any) => {
         state.selectedDocument = action.payload

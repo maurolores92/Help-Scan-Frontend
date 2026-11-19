@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { AppDispatch, RootState } from 'src/store'
 import {
   deleteDocument,
+  deleteMultipleDocuments,
   DocumentItem,
   fetchDocumentById,
   fetchDocumentFacets,
@@ -23,7 +24,7 @@ export const useDocumentsManager = () => {
     data,
     facets,
     statusFacets,
-    equipmentFacets,
+    departmentFacets,
     total,
     loading,
     uploading,
@@ -39,7 +40,7 @@ export const useDocumentsManager = () => {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [documentType, setDocumentType] = useState('')
-  const [equipmentId, setEquipmentId] = useState('')
+  const [purchaseOrderNumber, setPurchaseOrderNumber] = useState('')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [status, setStatus] = useState('')
@@ -52,6 +53,9 @@ export const useDocumentsManager = () => {
   const [validatingDoc, setValidatingDoc] = useState<DocumentItem | null>(null)
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [selectedRowIds, setSelectedRowIds] = useState<number[]>([])
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const lastHandledNotifId = useRef<number | null>(latestNotification?.id ?? null)
 
   useEffect(() => {
@@ -70,7 +74,7 @@ export const useDocumentsManager = () => {
         limit: pageSize,
         search: debouncedSearch,
         documentType,
-        equipmentId,
+        purchaseOrderNumber,
         dateFrom,
         dateTo,
         status,
@@ -79,7 +83,7 @@ export const useDocumentsManager = () => {
     )
     dispatch(fetchDocumentFacets(undefined))
     dispatch(fetchMyCompanyQuota())
-  }, [dispatch, page, pageSize, debouncedSearch, documentType, equipmentId, dateFrom, dateTo, status, source])
+  }, [dispatch, page, pageSize, debouncedSearch, documentType, purchaseOrderNumber, dateFrom, dateTo, status, source])
 
   useEffect(() => {
     loadData()
@@ -108,12 +112,13 @@ export const useDocumentsManager = () => {
     setSearchInput('')
     setDebouncedSearch('')
     setDocumentType('')
-    setEquipmentId('')
+    setPurchaseOrderNumber('')
     setDateFrom('')
     setDateTo('')
     setStatus('')
     setSource('')
     setPage(0)
+    setSelectedRowIds([])
   }
 
   const handleValidate = async (payload: ValidateDocumentPayload) => {
@@ -228,15 +233,44 @@ export const useDocumentsManager = () => {
     }
   }
 
+  const handleBulkDeleteConfirm = async () => {
+    if (selectedRowIds.length === 0) return
+    try {
+      setIsBulkDeleting(true)
+      const res: any = await dispatch(deleteMultipleDocuments(selectedRowIds)).unwrap()
+      const count = res?.count ?? selectedRowIds.length
+      toast.success(
+        count === 1
+          ? '1 documento eliminado correctamente'
+          : `${count} documentos eliminados correctamente`
+      )
+      setSelectedRowIds([])
+      setIsBulkDeleteOpen(false)
+      loadData()
+    } catch (err: any) {
+      try {
+        await Promise.all(selectedRowIds.map(id => dispatch(deleteDocument(id)).unwrap()))
+        toast.success(`${selectedRowIds.length} documentos eliminados correctamente`)
+        setSelectedRowIds([])
+        setIsBulkDeleteOpen(false)
+        loadData()
+      } catch (fallbackErr: any) {
+        toast.error(err?.message || fallbackErr?.message || 'Error al eliminar los documentos seleccionados')
+      }
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
+
   const hasActiveFilters = Boolean(
-    searchInput || documentType || equipmentId || dateFrom || dateTo || status || source
+    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source
   )
 
   return {
     data,
     facets,
     statusFacets,
-    equipmentFacets,
+    departmentFacets,
     total,
     loading,
     uploading,
@@ -248,8 +282,8 @@ export const useDocumentsManager = () => {
     setSearchInput,
     documentType,
     setDocumentType,
-    equipmentId,
-    setEquipmentId,
+    purchaseOrderNumber,
+    setPurchaseOrderNumber,
     dateFrom,
     setDateFrom,
     dateTo,
@@ -271,12 +305,18 @@ export const useDocumentsManager = () => {
     docToDelete,
     setDocToDelete,
     isDeleting,
+    selectedRowIds,
+    setSelectedRowIds,
+    isBulkDeleting,
+    isBulkDeleteOpen,
+    setIsBulkDeleteOpen,
     hasActiveFilters,
     handleResetFilters,
     handleUpload,
     handleSyncFtp,
     handleReprocess,
     handleDeleteConfirm,
+    handleBulkDeleteConfirm,
     handleValidate,
     handleReject
   }

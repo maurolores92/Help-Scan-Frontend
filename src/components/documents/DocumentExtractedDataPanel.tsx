@@ -191,11 +191,21 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
 
       <Grid container spacing={2}>
         <MetadataFieldCard label='N° / Código Documento' value={doc.documentNumber} />
+        <MetadataFieldCard label='Letra / Clase' value={doc.documentLetter} />
+        <MetadataFieldCard label='Punto de Venta' value={doc.pointOfSale} />
         <MetadataFieldCard label='Fecha Documento' value={doc.documentDate} />
         <MetadataFieldCard label='Monto Total' value={formattedTotal} />
-        <MetadataFieldCard label='Emisor / Proveedor / Origen' value={doc.issuerName} />
+        <MetadataFieldCard label='Emisor / Proveedor' value={doc.issuerName} />
         <MetadataFieldCard label='CUIT / ID Fiscal Emisor' value={doc.issuerTaxId} />
         <MetadataFieldCard label='Destinatario / Cliente' value={doc.recipientName} />
+        <MetadataFieldCard label='CUIT Cliente' value={doc.recipientTaxId} />
+        <MetadataFieldCard label='N° Orden de Compra (O.C.)' value={doc.purchaseOrderNumber} />
+        <MetadataFieldCard label='CAE (AFIP/ARCA)' value={doc.cae} />
+        <MetadataFieldCard label='Vto. CAE' value={doc.caeDueDate} />
+        <MetadataFieldCard label='Sector / Centro de Costos' value={doc.department} />
+        <MetadataFieldCard label='Transporte / Logística' value={doc.carrierName} />
+        <MetadataFieldCard label='Período' value={doc.period} />
+        <MetadataFieldCard label='Sucursal / Planta' value={doc.branch} />
         <MetadataFieldCard label='Persona Responsable / Firmante' value={doc.responsiblePerson} />
       </Grid>
 

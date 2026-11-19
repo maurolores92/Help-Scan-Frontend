@@ -88,9 +88,16 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   const [totalAmount, setTotalAmount] = useState<string>('')
   const [paymentTerms, setPaymentTerms] = useState<string>('')
   const [paymentMethod, setPaymentMethod] = useState<string>('')
-  const [equipmentId, setEquipmentId] = useState<string>('')
-  const [equipmentModel, setEquipmentModel] = useState<string>('')
-  const [meterCount, setMeterCount] = useState<string>('')
+  const [documentLetter, setDocumentLetter] = useState<string>('')
+  const [pointOfSale, setPointOfSale] = useState<string>('')
+  const [caeDueDate, setCaeDueDate] = useState<string>('')
+  const [purchaseOrderNumber, setPurchaseOrderNumber] = useState<string>('')
+  const [exemptAmount, setExemptAmount] = useState<string>('')
+  const [otherTaxesAmount, setOtherTaxesAmount] = useState<string>('')
+  const [carrierName, setCarrierName] = useState<string>('')
+  const [department, setDepartment] = useState<string>('')
+  const [branch, setBranch] = useState<string>('')
+  const [period, setPeriod] = useState<string>('')
   const [referenceNumber, setReferenceNumber] = useState<string>('')
   const [summary, setSummary] = useState<string>('')
   const [validationNotes, setValidationNotes] = useState<string>('')
@@ -125,9 +132,16 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
       setTotalAmount(doc.totalAmount !== null && doc.totalAmount !== undefined ? String(doc.totalAmount) : '')
       setPaymentTerms(doc.paymentTerms || '')
       setPaymentMethod(doc.paymentMethod || '')
-      setEquipmentId(doc.equipmentId || (doc.extractedData?.attributes?.equipo_id as string) || '')
-      setEquipmentModel(doc.equipmentModel || '')
-      setMeterCount(doc.meterCount || (doc.extractedData?.attributes?.contador as string) || '')
+      setDocumentLetter(doc.documentLetter || '')
+      setPointOfSale(doc.pointOfSale || '')
+      setCaeDueDate(doc.caeDueDate || '')
+      setPurchaseOrderNumber(doc.purchaseOrderNumber || '')
+      setExemptAmount(doc.exemptAmount !== null && doc.exemptAmount !== undefined ? String(doc.exemptAmount) : '')
+      setOtherTaxesAmount(doc.otherTaxesAmount !== null && doc.otherTaxesAmount !== undefined ? String(doc.otherTaxesAmount) : '')
+      setCarrierName(doc.carrierName || '')
+      setDepartment(doc.department || '')
+      setBranch(doc.branch || '')
+      setPeriod(doc.period || '')
       setReferenceNumber(doc.referenceNumber || '')
       setSummary(doc.summary || '')
       setValidationNotes(doc.validationNotes || '')
@@ -251,9 +265,16 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
       totalAmount: totalAmount ? Number(totalAmount) : undefined,
       paymentTerms: paymentTerms.trim() || undefined,
       paymentMethod: paymentMethod.trim() || undefined,
-      equipmentId: equipmentId.trim() || undefined,
-      equipmentModel: equipmentModel.trim() || undefined,
-      meterCount: meterCount.trim() || undefined,
+      documentLetter: documentLetter.trim() || undefined,
+      pointOfSale: pointOfSale.trim() || undefined,
+      caeDueDate: caeDueDate || undefined,
+      purchaseOrderNumber: purchaseOrderNumber.trim() || undefined,
+      exemptAmount: exemptAmount ? Number(exemptAmount) : undefined,
+      otherTaxesAmount: otherTaxesAmount ? Number(otherTaxesAmount) : undefined,
+      carrierName: carrierName.trim() || undefined,
+      department: department.trim() || undefined,
+      branch: branch.trim() || undefined,
+      period: period.trim() || undefined,
       referenceNumber: referenceNumber.trim() || undefined,
       summary: summary.trim() || undefined,
       validationNotes: validationNotes.trim() || undefined,
@@ -911,10 +932,10 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
 
             <Divider sx={{ my: 2 }} />
 
-            {/* SECCIÓN 5: Datos de Máquinas / Equipos */}
+            {/* SECCIÓN 5: Referencias Administrativas, Sector y Logística */}
             <Typography variant='subtitle2' sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Icon icon='tabler:printer' fontSize={18} />
-              5. Datos Operativos / Equipos
+              <Icon icon='tabler:building' fontSize={18} />
+              5. Referencias Administrativas, Sector y Logística
             </Typography>
 
             <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -922,14 +943,14 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                 <TextField
                   fullWidth
                   size='small'
-                  label='ID de Equipo'
-                  placeholder='Ej: 7016, 1532, 3846'
-                  value={equipmentId}
-                  onChange={e => setEquipmentId(e.target.value)}
+                  label='N° Orden de Compra (O.C.)'
+                  placeholder='Ej: OC-2026-0041'
+                  value={purchaseOrderNumber}
+                  onChange={e => setPurchaseOrderNumber(e.target.value)}
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position='start'>
-                        <Icon icon='tabler:hash' fontSize={16} />
+                        <Icon icon='tabler:clipboard-check' fontSize={16} />
                       </InputAdornment>
                     )
                   }}
@@ -940,10 +961,17 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                 <TextField
                   fullWidth
                   size='small'
-                  label='Modelo de Equipo'
-                  placeholder='Ej: MP 161 SPF, M320F, E52645'
-                  value={equipmentModel}
-                  onChange={e => setEquipmentModel(e.target.value)}
+                  label='N° Comprobante / Remito Asoc.'
+                  placeholder='Ej: R-0001-0004921'
+                  value={referenceNumber}
+                  onChange={e => setReferenceNumber(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <Icon icon='tabler:link' fontSize={16} />
+                      </InputAdornment>
+                    )
+                  }}
                 />
               </Grid>
 
@@ -951,10 +979,105 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                 <TextField
                   fullWidth
                   size='small'
-                  label='Contador de Copias'
-                  placeholder='Ej: ACT:8 - ANT:7'
-                  value={meterCount}
-                  onChange={e => setMeterCount(e.target.value)}
+                  label='Empresa de Transporte / Logística'
+                  placeholder='Ej: Vía Cargo, Andreani, Propio'
+                  value={carrierName}
+                  onChange={e => setCarrierName(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <Icon icon='tabler:truck' fontSize={16} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Sector / Centro de Costos'
+                  placeholder='Ej: Administración, Ventas, Taller'
+                  value={department}
+                  onChange={e => setDepartment(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <Icon icon='tabler:briefcase' fontSize={16} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Sucursal / Depósito'
+                  placeholder='Ej: Casa Central, Depósito 1'
+                  value={branch}
+                  onChange={e => setBranch(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <Icon icon='tabler:map-pin' fontSize={16} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Período Facturado / Mes'
+                  placeholder='Ej: 11/2026'
+                  value={period}
+                  onChange={e => setPeriod(e.target.value)}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position='start'>
+                        <Icon icon='tabler:calendar' fontSize={16} />
+                      </InputAdornment>
+                    )
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Letra Comprobante'
+                  placeholder='Ej: A, B, C, M, R, X'
+                  value={documentLetter}
+                  onChange={e => setDocumentLetter(e.target.value.toUpperCase())}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Punto de Venta'
+                  placeholder='Ej: 0001, 00014'
+                  value={pointOfSale}
+                  onChange={e => setPointOfSale(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  type='date'
+                  label='Fecha Vto. CAE'
+                  value={caeDueDate}
+                  onChange={e => setCaeDueDate(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
                 />
               </Grid>
 
@@ -962,14 +1085,33 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                 <TextField
                   fullWidth
                   size='small'
-                  label='N° de Referencia / O.C.'
-                  placeholder='Orden de Compra o Remito vinculado'
-                  value={referenceNumber}
-                  onChange={e => setReferenceNumber(e.target.value)}
+                  type='number'
+                  label='Monto No Gravado / Exento'
+                  placeholder='0.00'
+                  value={exemptAmount}
+                  onChange={e => setExemptAmount(e.target.value)}
+                  InputProps={{
+                    startAdornment: <InputAdornment position='start'>$</InputAdornment>
+                  }}
                 />
               </Grid>
 
               <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  type='number'
+                  label='Percepciones / Otros Tributos'
+                  placeholder='0.00'
+                  value={otherTaxesAmount}
+                  onChange={e => setOtherTaxesAmount(e.target.value)}
+                  InputProps={{
+                    startAdornment: <InputAdornment position='start'>$</InputAdornment>
+                  }}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   size='small'
