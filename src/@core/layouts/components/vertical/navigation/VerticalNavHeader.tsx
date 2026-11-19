@@ -94,7 +94,7 @@ const VerticalNavHeader = (props: Props) => {
         <LinkStyled href='/'>
           <Box
             component='img'
-            src='/images/HelpScan.png'
+            src='/images/logo-sin-fondo.png'
             alt='Help Scan Logo'
             sx={{ width: 34, height: 34, objectFit: 'contain', flexShrink: 0 }}
           />

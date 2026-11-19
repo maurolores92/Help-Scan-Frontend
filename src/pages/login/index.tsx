@@ -54,9 +54,9 @@ const HeroWrapper = styled(Box)<BoxProps>(({ theme }) => ({
     theme.palette.mode === 'dark'
       ? `linear-gradient(135deg, ${alpha(theme.palette.primary.dark, 0.55)} 0%, #0F172A 60%, #020617 100%)`
       : `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.12)} 0%, #F1F5F9 50%, ${alpha(
-          theme.palette.info.light,
-          0.18
-        )} 100%)`,
+        theme.palette.info.light,
+        0.18
+      )} 100%)`,
   border: `1px solid ${theme.palette.divider}`
 }))
 
@@ -185,7 +185,7 @@ const LoginPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 4 }}>
                 <Box
                   component='img'
-                  src='/images/HelpScan.png'
+                  src='/images/logo-sin-fondo.png'
                   alt='Help Scan Logo'
                   sx={{ width: 48, height: 48, objectFit: 'contain' }}
                 />
