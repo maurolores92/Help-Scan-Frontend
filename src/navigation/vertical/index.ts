@@ -36,6 +36,13 @@ const navigation = (): VerticalNavItemsType => {
       action: 'read',
       subject: 'ftp_devices'
     },
+    {
+      title: 'Correos Recibidos',
+      icon: 'tabler:mail-opened',
+      path: '/emails',
+      action: 'read',
+      subject: 'email_inbox'
+    },
 
     // ==========================================
     // 3. PLATAFORMA (EXCLUSIVO SUPER ADMIN)
@@ -102,7 +109,15 @@ const navigation = (): VerticalNavItemsType => {
       path: '/audit',
       action: 'read',
       subject: 'audits'
-    }
+    },
+
+    {
+      title: 'Configuración de Canales',
+      icon: 'tabler:plug-connected',
+      path: '/channels',
+      action: 'read',
+      subject: 'channels'
+    },
   ]
 }
 

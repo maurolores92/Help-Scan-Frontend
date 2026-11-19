@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import { Dispatch } from 'redux'
 import apiConnector from 'src/services/api.service'
 
-export type DocumentSource = 'APP_UPLOAD' | 'FTP'
+export type DocumentSource = 'APP_UPLOAD' | 'FTP' | 'EMAIL' | 'WHATSAPP' | 'TELEGRAM'
 export type DocumentStatus =
   | 'PENDING'
   | 'PROCESSING'
@@ -49,6 +49,7 @@ export interface DocumentItem {
   fileHash?: string | null
   sha256Hash?: string | null
   source: DocumentSource
+  sourceEmailId?: number | null
   status: DocumentStatus
   documentType?: string | null
   summary?: string | null

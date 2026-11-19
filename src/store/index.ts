@@ -9,6 +9,7 @@ import notifications from 'src/store/apps/notifications'
 import documents from 'src/store/apps/documents'
 import ftpDevices from 'src/store/apps/ftpDevices'
 import plans from 'src/store/apps/plans'
+import channels from 'src/store/apps/channels'
 
 export const store = configureStore({
   reducer: {
@@ -18,7 +19,8 @@ export const store = configureStore({
     notifications,
     documents,
     ftpDevices,
-    plans
+    plans,
+    channels
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

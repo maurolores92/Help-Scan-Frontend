@@ -18,6 +18,7 @@ import Icon from 'src/@core/components/icon'
 import toast from 'react-hot-toast'
 import apiConnector from 'src/services/api.service'
 import StatusChip from 'src/components/common/StatusChip'
+import EmailViewerDialog from 'src/views/apps/emails/EmailViewerDialog'
 import { DocumentArticleItem, DocumentItem, ValidateDocumentPayload } from 'src/store/apps/documents'
 
 interface DocumentValidationModalProps {
@@ -103,6 +104,7 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   const [validationNotes, setValidationNotes] = useState<string>('')
   const [items, setItems] = useState<DocumentArticleItem[]>([])
   const [showItemsSection, setShowItemsSection] = useState<boolean>(false)
+  const [originEmailOpen, setOriginEmailOpen] = useState<boolean>(false)
 
   // Sync state whenever doc changes
   useEffect(() => {
@@ -354,6 +356,7 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   }
 
   return (
+    <>
     <Dialog
       open={open}
       onClose={onClose}
@@ -410,6 +413,18 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {doc.source === 'EMAIL' && doc.sourceEmailId && (
+            <Button
+              size='small'
+              variant='outlined'
+              color='info'
+              startIcon={<Icon icon='tabler:mail-opened' />}
+              onClick={() => setOriginEmailOpen(true)}
+              sx={{ textTransform: 'none', height: 32 }}
+            >
+              Ver correo de origen
+            </Button>
+          )}
           {onReprocess && doc && (
             <Button
               size='small'
@@ -1176,6 +1191,13 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
         </Box>
       </DialogActions>
     </Dialog>
+
+    <EmailViewerDialog
+      open={originEmailOpen}
+      emailId={doc?.sourceEmailId ?? null}
+      onClose={() => setOriginEmailOpen(false)}
+    />
+    </>
   )
 }
 

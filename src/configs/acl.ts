@@ -24,6 +24,8 @@ const PLATFORM_ONLY_SUBJECTS = ['companies', 'plans', 'permissions', 'notificati
 const TENANT_ONLY_SUBJECTS = [
   'documents',
   'ftp_devices',
+  'channels',
+  'email_inbox',
   'users',
   'users_menu',
   'roles',
@@ -116,6 +118,17 @@ const defineRulesFor = (role: string, _subject: string, permissions: string[] = 
     }
     if (permission === 'QUERY_AI_DOCUMENTS') {
       can('read', 'ai_queries')
+    }
+    if (permission === 'VIEW_CHANNELS') {
+      can('read', 'channels')
+    }
+    if (permission === 'MANAGE_CHANNELS') {
+      can('manage', 'channels')
+      can('read', 'channels')
+    }
+    if (permission === 'VIEW_EMAIL_INBOX') {
+      can('read', 'email_inbox')
+      can('manage', 'email_inbox')
     }
   })
 

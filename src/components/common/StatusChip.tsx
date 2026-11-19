@@ -35,7 +35,10 @@ const STATUS_CONFIGS: Record<string, StatusConfig> = {
   SUSPENDED: { label: 'Suspendida', color: 'error' },
   BLOCKED: { label: 'Bloqueado', color: 'error' },
   APP_UPLOAD: { label: 'Subida Web', color: 'primary' },
-  FTP: { label: 'Escáner FTP', color: 'secondary' }
+  FTP: { label: 'Escáner FTP', color: 'secondary' },
+  EMAIL: { label: 'Correo Email', color: 'info' },
+  WHATSAPP: { label: 'WhatsApp', color: 'success' },
+  TELEGRAM: { label: 'Telegram', color: 'info' }
 }
 
 export const StatusChip: React.FC<StatusChipProps> = ({
