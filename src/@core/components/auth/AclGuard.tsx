@@ -49,9 +49,19 @@ const AclGuard = (props: AclGuardProps) => {
     }
   }, [auth.user, guestGuard, router])
 
-  // User is logged in, build ability for the user based on his role
+  // User is logged in, build ability for the user based on his role & enabled tenant modules
   if (auth.user && !ability) {
-    ability = buildAbilityFor(auth.user.role, aclAbilities.subject, auth.user.permissions)
+    const companyObj =
+      auth.user.company && typeof auth.user.company === 'object' ? auth.user.company : null
+    const enabledModules =
+      companyObj && Array.isArray(companyObj.enabledModules) ? companyObj.enabledModules : undefined
+
+    ability = buildAbilityFor(
+      auth.user.role,
+      aclAbilities.subject,
+      auth.user.permissions,
+      enabledModules
+    )
     if (router.route === '/') {
       return <Spinner />
     }

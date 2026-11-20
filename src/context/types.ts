@@ -11,6 +11,7 @@ export type UserCompanyInfoType = {
   name: string
   slug: string
   planId?: number | null
+  enabledModules?: string[]
   plan?: {
     id: number
     name: string

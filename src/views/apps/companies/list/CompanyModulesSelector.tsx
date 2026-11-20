@@ -6,18 +6,23 @@ import Chip from '@mui/material/Chip'
 import Icon from 'src/@core/components/icon'
 import { Control, Controller } from 'react-hook-form'
 
-interface ModuleOption {
+export interface ModuleOption {
   id: string
   name: string
   icon: string
+  category?: 'core' | 'channel'
 }
 
 export const AVAILABLE_TENANT_MODULES: ModuleOption[] = [
-  { id: 'documents', name: 'Documentos PDF & FTP', icon: 'tabler:file-text' },
-  { id: 'ai_queries', name: 'Consultas Inteligentes IA', icon: 'tabler:sparkles' },
-  { id: 'users', name: 'Usuarios', icon: 'tabler:users' },
-  { id: 'roles', name: 'Roles', icon: 'tabler:shield-check' },
-  { id: 'audit', name: 'Auditoría', icon: 'tabler:clipboard-list' }
+  { id: 'documents', name: 'Documentos PDF & OCR', icon: 'tabler:file-text', category: 'core' },
+  { id: 'ai_queries', name: 'Consultas Inteligentes IA', icon: 'tabler:sparkles', category: 'core' },
+  { id: 'sftp', name: 'Impresoras HP & SFTP', icon: 'tabler:printer', category: 'channel' },
+  { id: 'email', name: 'Ingesta por Email (IMAP)', icon: 'tabler:mail', category: 'channel' },
+  { id: 'whatsapp', name: 'WhatsApp Business', icon: 'tabler:brand-whatsapp', category: 'channel' },
+  { id: 'telegram', name: 'Telegram Bot', icon: 'tabler:brand-telegram', category: 'channel' },
+  { id: 'users', name: 'Usuarios', icon: 'tabler:users', category: 'core' },
+  { id: 'roles', name: 'Roles', icon: 'tabler:shield-check', category: 'core' },
+  { id: 'audit', name: 'Auditoría', icon: 'tabler:clipboard-list', category: 'core' }
 ]
 
 interface CompanyModulesSelectorProps {

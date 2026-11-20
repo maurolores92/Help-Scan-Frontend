@@ -26,6 +26,7 @@ const TENANT_ONLY_SUBJECTS = [
   'ftp_devices',
   'channels',
   'email_inbox',
+  'whatsapp_inbox',
   'users',
   'users_menu',
   'roles',
@@ -53,9 +54,15 @@ const isPlatformOnlyPermission = (upperPerm: string): boolean => {
 }
 
 /**
- * Define reglas CASL separando estrictamente al Super Admin de Plataforma de las Compañías (Tenants).
+ * Define reglas CASL separando estrictamente al Super Admin de Plataforma de las Compañías (Tenants),
+ * y aplicando restricciones según los módulos habilitados para la compañía (`enabledModules`).
  */
-const defineRulesFor = (role: string, _subject: string, permissions: string[] = []) => {
+const defineRulesFor = (
+  role: string,
+  _subject: string,
+  permissions: string[] = [],
+  enabledModules?: string[]
+) => {
   const { can, cannot, rules } = new AbilityBuilder(AppAbility)
 
   if (role === 'superadmin') {
@@ -130,7 +137,32 @@ const defineRulesFor = (role: string, _subject: string, permissions: string[] = 
       can('read', 'email_inbox')
       can('manage', 'email_inbox')
     }
+    if (permission === 'VIEW_WHATSAPP_INBOX') {
+      can('read', 'whatsapp_inbox')
+      can('manage', 'whatsapp_inbox')
+    }
   })
+
+  // Aplicar restricciones según los módulos habilitados para la compañía
+  if (Array.isArray(enabledModules)) {
+    const hasMod = (modId: string) => enabledModules.includes(modId)
+
+    if (!hasMod('documents')) {
+      restrictSubjects(cannot, ['documents'])
+    }
+    if (!hasMod('sftp')) {
+      restrictSubjects(cannot, ['ftp_devices'])
+    }
+    if (!hasMod('email')) {
+      restrictSubjects(cannot, ['email_inbox'])
+    }
+    if (!hasMod('whatsapp')) {
+      restrictSubjects(cannot, ['whatsapp_inbox'])
+    }
+    if (!hasMod('email') && !hasMod('whatsapp') && !hasMod('telegram')) {
+      restrictSubjects(cannot, ['channels'])
+    }
+  }
 
   restrictSubjects(cannot, PLATFORM_ONLY_SUBJECTS)
   can('read', 'myprofile')
@@ -138,8 +170,13 @@ const defineRulesFor = (role: string, _subject: string, permissions: string[] = 
   return rules
 }
 
-export const buildAbilityFor = (role: string, subject: string, permissions: string[] = []): AppAbility => {
-  return new AppAbility(defineRulesFor(role, subject, permissions), {
+export const buildAbilityFor = (
+  role: string,
+  subject: string,
+  permissions: string[] = [],
+  enabledModules?: string[]
+): AppAbility => {
+  return new AppAbility(defineRulesFor(role, subject, permissions, enabledModules), {
     // @ts-ignore
     detectSubjectType: object => object!.type
   })

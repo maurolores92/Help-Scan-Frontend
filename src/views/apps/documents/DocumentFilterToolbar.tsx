@@ -10,6 +10,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import Icon from 'src/@core/components/icon'
 import SyncFtpButton from 'src/components/documents/SyncFtpButton'
+import { useAuth } from 'src/hooks/useAuth'
 import { DocumentTypeFacet } from 'src/store/apps/documents'
 
 interface DocumentFilterToolbarProps {
@@ -75,6 +76,13 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
   onSyncFtp,
   isSyncing
 }) => {
+  const { user } = useAuth()
+  const enabledModules =
+    user?.company && typeof user.company === 'object' && Array.isArray(user.company.enabledModules)
+      ? user.company.enabledModules
+      : null
+  const hasSftpModule = !enabledModules || enabledModules.includes('sftp')
+
   // Filtrar exclusivamente los tipos de documentos que realmente existen con conteo > 0
   const availableTypes = useMemo(() => {
     return (facets || []).filter(f => Boolean(f.value) && Number(f.count) > 0)
@@ -170,7 +178,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
         />
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-          <SyncFtpButton onSync={onSyncFtp} loading={isSyncing} />
+          {hasSftpModule && <SyncFtpButton onSync={onSyncFtp} loading={isSyncing} />}
 
           <Button
             variant={showUpload ? 'outlined' : 'contained'}
@@ -223,6 +231,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
             <MenuItem value='APP_UPLOAD'>Subida Web</MenuItem>
             <MenuItem value='FTP'>SFTP / Bandeja</MenuItem>
             <MenuItem value='EMAIL'>Correo Electrónico</MenuItem>
+            <MenuItem value='WHATSAPP'>WhatsApp Business</MenuItem>
           </TextField>
         </Grid>
 

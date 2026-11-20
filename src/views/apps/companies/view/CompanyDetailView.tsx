@@ -206,7 +206,7 @@ export const CompanyDetailView: React.FC = () => {
             <CompanyUsersView company={company} onQuotaChanged={fetchCompany} />
           </TabPanel>
           <TabPanel value='modules' sx={{ p: 0 }}>
-            <CompanyModulesView companyId={Number(id)} />
+            <CompanyModulesView company={company} onCompanyUpdated={fetchCompany} />
           </TabPanel>
           <TabPanel value='ftp' sx={{ p: 0 }}>
             <FtpDevicesView companyId={Number(id)} isSuperAdminView />

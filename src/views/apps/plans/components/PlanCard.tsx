@@ -124,6 +124,38 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
               {renderLimitText(plan.maxAiQueriesMonthly, 'consultas')}
             </Typography>
           </Box>
+
+          <Box sx={{ mt: 1 }}>
+            <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 1 }}>
+              Canales habilitados:
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8 }}>
+              {[
+                { id: 'sftp', label: 'SFTP' },
+                { id: 'email', label: 'Email' },
+                { id: 'whatsapp', label: 'WhatsApp' },
+                { id: 'telegram', label: 'Telegram' }
+              ].map(ch => {
+                const included = Array.isArray(plan.includedModules) && plan.includedModules.includes(ch.id)
+
+                return (
+                  <Chip
+                    key={ch.id}
+                    size='small'
+                    label={ch.label}
+                    color={included ? 'primary' : 'default'}
+                    variant={included ? 'outlined' : 'outlined'}
+                    sx={{
+                      height: 22,
+                      fontSize: '0.7rem',
+                      opacity: included ? 1 : 0.45,
+                      textDecoration: included ? 'none' : 'line-through'
+                    }}
+                  />
+                )
+              })}
+            </Box>
+          </Box>
         </Box>
 
         <Divider sx={{ my: 3 }} />

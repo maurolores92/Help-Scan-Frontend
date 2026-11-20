@@ -84,3 +84,91 @@ export interface EmailMessagesStats {
   skipped: number
   errors: number
 }
+
+// =========================================================================
+// WHATSAPP QR DIRECTO (BAILEYS MULTITENANT)
+// =========================================================================
+
+export type WhatsappSenderPolicy = 'ALL' | 'WHITELIST'
+
+export type WhatsappConnectionStatus =
+  | 'DISCONNECTED'
+  | 'CONNECTING'
+  | 'QR_READY'
+  | 'CONNECTED'
+  | 'ERROR'
+
+export type WhatsappSyncStatus = 'IDLE' | 'OK' | 'ERROR'
+
+export type WhatsappMessageStatus = 'PROCESSED' | 'SKIPPED' | 'REJECTED_SENDER' | 'ERROR'
+
+export interface CompanyWhatsappChannelItem {
+  id: number
+  companyId: number
+  sessionKey: string
+  connectionStatus: WhatsappConnectionStatus
+  connectedPhone: string | null
+  connectedName: string | null
+  senderPolicy: WhatsappSenderPolicy
+  allowedPhones: string[]
+  ignoreGroups: boolean
+  isActive: boolean
+  processImages: boolean
+  autoReplyConfirmation: boolean
+  lastQrAt: string | null
+  lastMessageAt: string | null
+  lastSyncStatus: WhatsappSyncStatus
+  lastSyncMessage: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface WhatsappRuntimeSnapshot {
+  companyId: number
+  connectionStatus: WhatsappConnectionStatus
+  qrDataUrl: string | null
+  connectedPhone: string | null
+  connectedName: string | null
+  lastError: string | null
+}
+
+export interface CompanyWhatsappConfigResponse {
+  configured: boolean
+  channel: CompanyWhatsappChannelItem | null
+  runtime: WhatsappRuntimeSnapshot
+}
+
+export interface UpsertWhatsappChannelPayload {
+  senderPolicy: WhatsappSenderPolicy
+  allowedPhones: string[]
+  ignoreGroups: boolean
+  isActive: boolean
+  processImages: boolean
+  autoReplyConfirmation: boolean
+}
+
+export interface WhatsappMessageItem {
+  id: number
+  companyId: number
+  channelId: number | null
+  externalMessageId: string
+  senderPhone: string
+  senderName: string | null
+  messageType: string
+  fileName: string | null
+  mimeType: string | null
+  caption: string | null
+  receivedAt: string
+  status: WhatsappMessageStatus
+  statusReason: string | null
+  documentId: number | null
+  document?: EmailMessageDocumentRef | null
+  createdAt?: string
+}
+
+export interface WhatsappMessagesStats {
+  total: number
+  processed: number
+  skipped: number
+  errors: number
+}

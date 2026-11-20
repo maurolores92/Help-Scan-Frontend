@@ -1,11 +1,17 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import apiConnector from 'src/services/api.service'
 import {
   CompanyEmailChannelItem,
+  CompanyWhatsappChannelItem,
+  CompanyWhatsappConfigResponse,
   EmailMessageItem,
   EmailMessagesStats,
   TestEmailConnectionPayload,
-  UpsertEmailChannelPayload
+  UpsertEmailChannelPayload,
+  UpsertWhatsappChannelPayload,
+  WhatsappMessageItem,
+  WhatsappMessagesStats,
+  WhatsappRuntimeSnapshot
 } from 'src/types/apps/channelTypes'
 
 export interface ChannelsState {
@@ -22,6 +28,19 @@ export interface ChannelsState {
   loadingEmails: boolean
   loadingEmailDetail: boolean
   rescuingEmail: boolean
+
+  // WhatsApp QR Directo
+  whatsappChannel: CompanyWhatsappChannelItem | null
+  whatsappRuntime: WhatsappRuntimeSnapshot | null
+  whatsappConfigured: boolean
+  whatsappMessages: WhatsappMessageItem[]
+  whatsappMessagesTotal: number
+  whatsappMessagesStats: WhatsappMessagesStats
+  loadingWhatsappConfig: boolean
+  savingWhatsappConfig: boolean
+  connectingWhatsapp: boolean
+  disconnectingWhatsapp: boolean
+  loadingWhatsappMessages: boolean
 }
 
 const initialState: ChannelsState = {
@@ -37,7 +56,19 @@ const initialState: ChannelsState = {
   syncing: false,
   loadingEmails: false,
   loadingEmailDetail: false,
-  rescuingEmail: false
+  rescuingEmail: false,
+
+  whatsappChannel: null,
+  whatsappRuntime: null,
+  whatsappConfigured: false,
+  whatsappMessages: [],
+  whatsappMessagesTotal: 0,
+  whatsappMessagesStats: { total: 0, processed: 0, skipped: 0, errors: 0 },
+  loadingWhatsappConfig: false,
+  savingWhatsappConfig: false,
+  connectingWhatsapp: false,
+  disconnectingWhatsapp: false,
+  loadingWhatsappMessages: false
 }
 
 export const fetchEmailChannelConfig = createAsyncThunk('channels/fetchEmailConfig', async () => {
@@ -116,12 +147,82 @@ export const rescueEmailToDocument = createAsyncThunk(
   }
 )
 
+// =========================================================================
+// THUNKS WHATSAPP QR DIRECTO
+// =========================================================================
+
+export const fetchWhatsappChannelConfig = createAsyncThunk(
+  'channels/fetchWhatsappConfig',
+  async () => {
+    const res = await apiConnector.get('/channels/whatsapp')
+
+    return res as CompanyWhatsappConfigResponse
+  }
+)
+
+export const connectWhatsappQr = createAsyncThunk('channels/connectWhatsappQr', async () => {
+  const res = await apiConnector.post('/channels/whatsapp/connect', {})
+
+  return res as CompanyWhatsappConfigResponse & { message: string }
+})
+
+export const disconnectWhatsappSession = createAsyncThunk(
+  'channels/disconnectWhatsappSession',
+  async () => {
+    const res = await apiConnector.post('/channels/whatsapp/disconnect', {})
+
+    return res as CompanyWhatsappConfigResponse & { message: string }
+  }
+)
+
+export const saveWhatsappChannelSettings = createAsyncThunk(
+  'channels/saveWhatsappSettings',
+  async (payload: UpsertWhatsappChannelPayload) => {
+    const res = await apiConnector.patch('/channels/whatsapp/settings', payload)
+
+    return res as CompanyWhatsappConfigResponse & { message: string }
+  }
+)
+
+export const fetchWhatsappMessages = createAsyncThunk(
+  'channels/fetchWhatsappMessages',
+  async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.search) query.set('search', params.search)
+    if (params?.status) query.set('status', params.status)
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.limit) query.set('limit', String(params.limit))
+
+    const qs = query.toString()
+    const res = await apiConnector.get(`/channels/whatsapp/messages${qs ? `?${qs}` : ''}`)
+
+    return res as {
+      items: WhatsappMessageItem[]
+      total: number
+      page: number
+      limit: number
+      stats: WhatsappMessagesStats
+    }
+  }
+)
+
 export const channelsSlice = createSlice({
   name: 'channels',
   initialState,
   reducers: {
     clearSelectedEmail: state => {
       state.selectedEmail = null
+    },
+    applyWhatsappRealtimeStatus: (state, action: PayloadAction<WhatsappRuntimeSnapshot>) => {
+      state.whatsappRuntime = action.payload
+      if (state.whatsappChannel) {
+        state.whatsappChannel = {
+          ...state.whatsappChannel,
+          connectionStatus: action.payload.connectionStatus,
+          connectedPhone: action.payload.connectedPhone ?? state.whatsappChannel.connectedPhone,
+          connectedName: action.payload.connectedName ?? state.whatsappChannel.connectedName
+        }
+      }
     }
   },
   extraReducers: builder => {
@@ -206,9 +307,71 @@ export const channelsSlice = createSlice({
       .addCase(rescueEmailToDocument.rejected, state => {
         state.rescuingEmail = false
       })
+
+      // WhatsApp reducers
+      .addCase(fetchWhatsappChannelConfig.pending, state => {
+        state.loadingWhatsappConfig = true
+      })
+      .addCase(fetchWhatsappChannelConfig.fulfilled, (state, action) => {
+        state.loadingWhatsappConfig = false
+        state.whatsappConfigured = action.payload.configured
+        state.whatsappChannel = action.payload.channel
+        state.whatsappRuntime = action.payload.runtime
+      })
+      .addCase(fetchWhatsappChannelConfig.rejected, state => {
+        state.loadingWhatsappConfig = false
+      })
+      .addCase(connectWhatsappQr.pending, state => {
+        state.connectingWhatsapp = true
+      })
+      .addCase(connectWhatsappQr.fulfilled, (state, action) => {
+        state.connectingWhatsapp = false
+        state.whatsappConfigured = action.payload.configured
+        state.whatsappChannel = action.payload.channel
+        state.whatsappRuntime = action.payload.runtime
+      })
+      .addCase(connectWhatsappQr.rejected, state => {
+        state.connectingWhatsapp = false
+      })
+      .addCase(disconnectWhatsappSession.pending, state => {
+        state.disconnectingWhatsapp = true
+      })
+      .addCase(disconnectWhatsappSession.fulfilled, (state, action) => {
+        state.disconnectingWhatsapp = false
+        state.whatsappConfigured = action.payload.configured
+        state.whatsappChannel = action.payload.channel
+        state.whatsappRuntime = action.payload.runtime
+      })
+      .addCase(disconnectWhatsappSession.rejected, state => {
+        state.disconnectingWhatsapp = false
+      })
+      .addCase(saveWhatsappChannelSettings.pending, state => {
+        state.savingWhatsappConfig = true
+      })
+      .addCase(saveWhatsappChannelSettings.fulfilled, (state, action) => {
+        state.savingWhatsappConfig = false
+        state.whatsappConfigured = action.payload.configured
+        state.whatsappChannel = action.payload.channel
+        state.whatsappRuntime = action.payload.runtime
+      })
+      .addCase(saveWhatsappChannelSettings.rejected, state => {
+        state.savingWhatsappConfig = false
+      })
+      .addCase(fetchWhatsappMessages.pending, state => {
+        state.loadingWhatsappMessages = true
+      })
+      .addCase(fetchWhatsappMessages.fulfilled, (state, action) => {
+        state.loadingWhatsappMessages = false
+        state.whatsappMessages = action.payload.items
+        state.whatsappMessagesTotal = action.payload.total
+        state.whatsappMessagesStats = action.payload.stats
+      })
+      .addCase(fetchWhatsappMessages.rejected, state => {
+        state.loadingWhatsappMessages = false
+      })
   }
 })
 
-export const { clearSelectedEmail } = channelsSlice.actions
+export const { clearSelectedEmail, applyWhatsappRealtimeStatus } = channelsSlice.actions
 
 export default channelsSlice.reducer

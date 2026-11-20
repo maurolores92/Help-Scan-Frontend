@@ -43,6 +43,13 @@ const navigation = (): VerticalNavItemsType => {
       action: 'read',
       subject: 'email_inbox'
     },
+    {
+      title: 'Mensajes WhatsApp',
+      icon: 'tabler:brand-whatsapp',
+      path: '/whatsapp',
+      action: 'read',
+      subject: 'whatsapp_inbox'
+    },
 
     // ==========================================
     // 3. PLATAFORMA (EXCLUSIVO SUPER ADMIN)
