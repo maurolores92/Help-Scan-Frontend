@@ -2,24 +2,16 @@ import React from 'react'
 import Box from '@mui/material/Box'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
-import MenuItem from '@mui/material/MenuItem'
-import Select from '@mui/material/Select'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { GridColDef } from '@mui/x-data-grid'
 import CustomAvatar from 'src/@core/components/mui/avatar'
 import Icon from 'src/@core/components/icon'
 import { getInitials } from 'src/@core/utils/get-initials'
-import {
-  DEMO_STATUS_MAP,
-  DEMO_STATUS_OPTIONS,
-  DemoRequestStatus,
-  DemoRequestType
-} from 'src/types/apps/demoRequestTypes'
+import { DEMO_STATUS_MAP, DemoRequestType } from 'src/types/apps/demoRequestTypes'
 
 interface BuildColumnsHandlers {
-  updatingId: number | null
-  onStatusChange: (row: DemoRequestType, newStatus: DemoRequestStatus) => void
+  onChangeStatusClick: (row: DemoRequestType) => void
   onViewDetail: (row: DemoRequestType) => void
   onDeleteClick: (row: DemoRequestType) => void
 }
@@ -40,8 +32,7 @@ const formatDateTime = (isoDate?: string) => {
 }
 
 export const buildDemosColumns = ({
-  updatingId,
-  onStatusChange,
+  onChangeStatusClick,
   onViewDetail,
   onDeleteClick
 }: BuildColumnsHandlers): GridColDef[] => [
@@ -71,11 +62,7 @@ export const buildDemosColumns = ({
           {getInitials(row.companyName || row.fullName || 'D')}
         </CustomAvatar>
         <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-          <Typography
-            variant='body2'
-            noWrap
-            sx={{ fontWeight: 700, color: 'text.primary' }}
-          >
+          <Typography variant='body2' noWrap sx={{ fontWeight: 700, color: 'text.primary' }}>
             {row.fullName}
           </Typography>
           <Typography variant='caption' noWrap sx={{ color: 'text.secondary' }}>
@@ -153,56 +140,36 @@ export const buildDemosColumns = ({
   {
     field: 'status',
     headerName: 'Estado',
-    minWidth: 165,
-    flex: 0.14,
+    minWidth: 135,
+    flex: 0.12,
     renderCell: ({ row }: { row: DemoRequestType }) => {
       const meta = DEMO_STATUS_MAP[row.status] || DEMO_STATUS_MAP.RECIBIDO
       return (
-        <Select
-          size='small'
-          value={row.status || 'RECIBIDO'}
-          disabled={updatingId === row.id}
-          onClick={e => e.stopPropagation()}
-          onChange={e => onStatusChange(row, e.target.value as DemoRequestStatus)}
-          sx={{
-            minWidth: 138,
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            '& .MuiSelect-select': { py: 0.6, display: 'flex', alignItems: 'center' }
-          }}
-          renderValue={val => {
-            const selectedMeta = DEMO_STATUS_MAP[val as DemoRequestStatus] || meta
-            return (
-              <Chip
-                size='small'
-                label={selectedMeta.label}
-                color={selectedMeta.color}
-                sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
-              />
-            )
-          }}
-        >
-          {DEMO_STATUS_OPTIONS.map(opt => (
-            <MenuItem key={opt.value} value={opt.value}>
-              <Chip
-                size='small'
-                label={opt.label}
-                color={opt.color}
-                sx={{ height: 22, fontSize: '0.72rem', fontWeight: 700 }}
-              />
-            </MenuItem>
-          ))}
-        </Select>
+        <Tooltip title='Clic para cambiar estado'>
+          <Chip
+            clickable
+            size='small'
+            label={meta.label}
+            color={meta.color}
+            onClick={() => onChangeStatusClick(row)}
+            sx={{ fontWeight: 700, fontSize: '0.75rem' }}
+          />
+        </Tooltip>
       )
     }
   },
   {
     field: 'actions',
     headerName: 'Acciones',
-    minWidth: 105,
+    minWidth: 135,
     sortable: false,
     renderCell: ({ row }: { row: DemoRequestType }) => (
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Tooltip title='Cambiar estado'>
+          <IconButton size='small' color='info' onClick={() => onChangeStatusClick(row)}>
+            <Icon icon='tabler:exchange' fontSize={19} />
+          </IconButton>
+        </Tooltip>
         <Tooltip title='Ver detalle y notas'>
           <IconButton size='small' color='primary' onClick={() => onViewDetail(row)}>
             <Icon icon='tabler:eye' fontSize={19} />

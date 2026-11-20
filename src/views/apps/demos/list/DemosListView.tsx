@@ -26,6 +26,7 @@ import {
 } from 'src/types/apps/demoRequestTypes'
 import { buildDemosColumns } from './DemosListColumns'
 import DemoDetailDialog from './DemoDetailDialog'
+import DemoStatusModal from './DemoStatusModal'
 
 export const DemosListView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -37,6 +38,7 @@ export const DemosListView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<DemoRequestStatus | ''>('')
   const [selectedDemo, setSelectedDemo] = useState<DemoRequestType | null>(null)
   const [detailOpen, setDetailOpen] = useState<boolean>(false)
+  const [statusModalDemo, setStatusModalDemo] = useState<DemoRequestType | null>(null)
   const [demoToDelete, setDemoToDelete] = useState<DemoRequestType | null>(null)
   const [deleting, setDeleting] = useState<boolean>(false)
 
@@ -53,20 +55,6 @@ export const DemosListView: React.FC = () => {
     }, 220)
     return () => clearTimeout(timer)
   }, [searchFilter, statusFilter, loadDemos])
-
-  const handleStatusChange = useCallback(
-    async (row: DemoRequestType, newStatus: DemoRequestStatus) => {
-      try {
-        await dispatch(
-          updateDemoRequestStatus({ id: row.id, status: newStatus })
-        ).unwrap()
-        toast.success(`Estado actualizado para ${row.companyName}`)
-      } catch (err: any) {
-        toast.error(err?.message || 'Error al actualizar el estado de la demo')
-      }
-    },
-    [dispatch]
-  )
 
   const handleSaveDetail = useCallback(
     async (id: number, status: DemoRequestStatus, notes: string) => {
@@ -98,15 +86,14 @@ export const DemosListView: React.FC = () => {
   const columns = useMemo(
     () =>
       buildDemosColumns({
-        updatingId,
-        onStatusChange: handleStatusChange,
+        onChangeStatusClick: row => setStatusModalDemo(row),
         onViewDetail: row => {
           setSelectedDemo(row)
           setDetailOpen(true)
         },
         onDeleteClick: row => setDemoToDelete(row)
       }),
-    [updatingId, handleStatusChange]
+    []
   )
 
   return (
@@ -195,6 +182,14 @@ export const DemosListView: React.FC = () => {
           setSelectedDemo(null)
         }}
         onSave={handleSaveDetail}
+      />
+
+      <DemoStatusModal
+        open={Boolean(statusModalDemo)}
+        demo={statusModalDemo}
+        saving={Boolean(statusModalDemo && updatingId === statusModalDemo.id)}
+        onClose={() => setStatusModalDemo(null)}
+        onConfirm={handleSaveDetail}
       />
 
       <ConfirmActionDialog
