@@ -48,7 +48,7 @@ class CustomDocument extends Document {
 
           {/* Twitter Card */}
           <meta name='twitter:card' content='summary_large_image' />
-          <meta name='twitter:title' content='Help Scan | Gestión Documental & Extracción OCR' />
+          <meta name='twitter:title' content='HelpScan | Gestión Documental & Extracción OCR' />
           <meta
             name='twitter:description'
             content='Plataforma corporativa multitenant de almacenamiento e ingesta de documentos PDF con OCR.'
@@ -57,10 +57,10 @@ class CustomDocument extends Document {
           {/* PWA Manifest & Mobile Configuration */}
           <link rel='manifest' href='/manifest.json' />
           <meta name='theme-color' content='#32A048' />
-          <meta name='application-name' content='Help Scan' />
+          <meta name='application-name' content='HelpScan' />
           <meta name='apple-mobile-web-app-capable' content='yes' />
           <meta name='apple-mobile-web-app-status-bar-style' content='black-translucent' />
-          <meta name='apple-mobile-web-app-title' content='Help Scan' />
+          <meta name='apple-mobile-web-app-title' content='HelpScan' />
           <meta name='format-detection' content='telephone=no' />
           <meta name='mobile-web-app-capable' content='yes' />
         </Head>
@@ -81,12 +81,12 @@ CustomDocument.getInitialProps = async ctx => {
   ctx.renderPage = () =>
     originalRenderPage({
       enhanceApp: App => props =>
-        (
-          <App
-            {...props} // @ts-ignore
-            emotionCache={cache}
-          />
-        )
+      (
+        <App
+          {...props} // @ts-ignore
+          emotionCache={cache}
+        />
+      )
     })
 
   const initialProps = await Document.getInitialProps(ctx)

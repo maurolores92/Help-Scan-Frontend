@@ -150,10 +150,10 @@ const LoginPage = () => {
   return (
     <>
       <Head>
-        <title>Iniciar Sesión | Help Scan - Gestión Documental</title>
+        <title>Iniciar Sesión | HelpScan - Gestión Documental</title>
         <meta
           name='description'
-          content='Acceso seguro a Help Scan. Gestión multitenant de PDFs, escaneo inteligente e ingesta con OCR.'
+          content='Acceso seguro a HelpScan. Gestión multitenant de PDFs, escaneo inteligente e ingesta con OCR.'
         />
       </Head>
 
@@ -182,21 +182,13 @@ const LoginPage = () => {
           <HeroWrapper>
             <Box sx={{ maxWidth: 520, zIndex: 2 }}>
               {/* Badge Logo */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                 <Box
                   component='img'
-                  src='/images/logo-sin-fondo.png'
-                  alt='Help Scan Logo'
-                  sx={{ width: 48, height: 48, objectFit: 'contain' }}
+                  src='/images/HelpScan-plano.png'
+                  alt='HelScan Logo'
+                  sx={{ width: 300, height: 150, objectFit: 'contain' }}
                 />
-                <Box>
-                  <Typography variant='h4' sx={{ fontWeight: 800, letterSpacing: '-0.5px' }}>
-                    Help Scan
-                  </Typography>
-                  <Typography variant='caption' sx={{ color: 'primary.main', fontWeight: 700, letterSpacing: '0.5px' }}>
-                    GESTIÓN DOCUMENTAL & OCR
-                  </Typography>
-                </Box>
               </Box>
 
               <Typography variant='h3' sx={{ fontWeight: 800, mb: 2, lineHeight: 1.2 }}>
@@ -306,11 +298,11 @@ const LoginPage = () => {
                 <Box
                   component='img'
                   src='/images/HelpScan.png'
-                  alt='Help Scan'
+                  alt='HelpScan'
                   sx={{ width: 40, height: 40, objectFit: 'contain' }}
                 />
                 <Typography variant='h5' sx={{ fontWeight: 800, color: 'primary.main' }}>
-                  Help Scan
+                  HelpScan
                 </Typography>
               </Box>
             )}

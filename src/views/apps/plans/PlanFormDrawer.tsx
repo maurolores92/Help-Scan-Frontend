@@ -147,7 +147,7 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
               control={control}
               render={({ field }) => (
                 <TextField {...field} select fullWidth label='Color Distintivo'>
-                  <MenuItem value='primary'>Verde Principal (Help Scan)</MenuItem>
+                  <MenuItem value='primary'>Verde Principal (HelpScan)</MenuItem>
                   <MenuItem value='info'>Celeste Info</MenuItem>
                   <MenuItem value='success'>Verde Corporativo</MenuItem>
                   <MenuItem value='warning'>Ámbar Destacado</MenuItem>

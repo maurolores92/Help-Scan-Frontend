@@ -24,11 +24,13 @@ import Icon from 'src/@core/components/icon'
 import { AppDispatch, RootState } from 'src/store'
 import {
   fetchEmailChannelConfig,
+  regenerateEmailWebhookSecret,
   saveEmailChannelConfig,
   syncEmailChannelNow,
   testEmailChannelConnection
 } from 'src/store/apps/channels'
 import { EmailProviderType } from 'src/types/apps/channelTypes'
+import { getApiBaseUrl } from 'src/utils/api-url'
 
 const PROVIDER_PRESETS: Record<
   EmailProviderType,
@@ -113,6 +115,29 @@ const EmailChannelTab: React.FC = () => {
     setPort(preset.port)
     setSecure(preset.secure)
     setTestFeedback(null)
+  }
+
+  const webhookUrl =
+    emailChannel?.companyId && emailChannel?.webhookSecret
+      ? `${getApiBaseUrl()}/channels/email/webhook/${emailChannel.companyId}?token=${emailChannel.webhookSecret}`
+      : ''
+
+  const handleCopyText = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast.success(`${label} copiado al portapapeles`)
+    } catch {
+      toast.error('No se pudo copiar automáticamente')
+    }
+  }
+
+  const handleRegenerateSecret = async () => {
+    try {
+      await dispatch(regenerateEmailWebhookSecret()).unwrap()
+      toast.success('Token del webhook regenerado correctamente')
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al regenerar el token del webhook')
+    }
   }
 
   const handleTestConnection = async () => {
@@ -499,8 +524,70 @@ const EmailChannelTab: React.FC = () => {
         </Card>
       </Grid>
 
-      {/* Panel lateral de ayuda y seguridad */}
+      {/* Panel lateral de Webhook en vivo, ayuda y seguridad */}
       <Grid item xs={12} md={4}>
+        <Card sx={{ mb: 4 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
+              <Icon icon='tabler:webhook' fontSize={22} color='#32A048' />
+              <Typography variant='h6'>Webhook & Tiempo Real</Typography>
+            </Box>
+            <Typography variant='body2' color='text.secondary' sx={{ mb: 2 }}>
+              Además de la escucha automática por <strong>IMAP IDLE</strong> (sin apretar Sincronizar), podés enviar correos al instante mediante Webhook HTTP y recibir notificaciones WebSocket en vivo.
+            </Typography>
+
+            {webhookUrl ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <TextField
+                  fullWidth
+                  size='small'
+                  label='Endpoint Webhook (POST JSON)'
+                  value={webhookUrl}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          size='small'
+                          onClick={() => handleCopyText(webhookUrl, 'URL de Webhook')}
+                          aria-label='Copiar URL de Webhook'
+                        >
+                          <Icon icon='tabler:copy' fontSize={17} />
+                        </IconButton>
+                      </InputAdornment>
+                    )
+                  }}
+                />
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                  <Button
+                    size='small'
+                    variant='outlined'
+                    startIcon={<Icon icon='tabler:key' />}
+                    onClick={() =>
+                      handleCopyText(emailChannel?.webhookSecret || '', 'Header x-webhook-secret')
+                    }
+                  >
+                    Copiar Token
+                  </Button>
+                  <Button
+                    size='small'
+                    variant='text'
+                    color='secondary'
+                    startIcon={<Icon icon='tabler:refresh' />}
+                    onClick={handleRegenerateSecret}
+                  >
+                    Regenerar
+                  </Button>
+                </Box>
+              </Box>
+            ) : (
+              <Alert severity='info'>
+                Guardá primero la configuración de correo para generar la URL y token de Webhook de tu compañía.
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+
         <Card sx={{ mb: 4 }}>
           <CardContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>

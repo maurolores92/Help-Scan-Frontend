@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
+import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import { fetchTelegramMessages } from 'src/store/apps/channels'
 import { TelegramMessageItem, TelegramMessageStatus } from 'src/types/apps/channelTypes'
@@ -31,6 +32,7 @@ const STATUS_BADGE: Record<
 
 const TelegramInboxView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const { socket } = useNotificationSocket()
   const {
     telegramMessages,
     telegramMessagesTotal,
@@ -67,6 +69,28 @@ const TelegramInboxView: React.FC = () => {
   useEffect(() => {
     loadMessages()
   }, [loadMessages])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRealtimeTelegram = () => {
+      loadMessages()
+    }
+
+    const handleNotification = (notif: any) => {
+      if (notif?.type === 'channel.telegram_received') {
+        loadMessages()
+      }
+    }
+
+    socket.on('telegram:message_received', handleRealtimeTelegram)
+    socket.on('notification', handleNotification)
+
+    return () => {
+      socket.off('telegram:message_received', handleRealtimeTelegram)
+      socket.off('notification', handleNotification)
+    }
+  }, [socket, loadMessages])
 
   const columns: GridColDef<TelegramMessageItem>[] = [
     {

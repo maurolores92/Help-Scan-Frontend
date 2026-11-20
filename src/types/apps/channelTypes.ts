@@ -21,6 +21,7 @@ export interface CompanyEmailChannelItem {
   lastSyncAt: string | null
   lastSyncStatus: EmailSyncStatus
   lastSyncMessage: string | null
+  webhookSecret?: string | null
   createdAt?: string
   updatedAt?: string
 }

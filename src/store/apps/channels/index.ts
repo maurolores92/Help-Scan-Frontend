@@ -133,6 +133,15 @@ export const syncEmailChannelNow = createAsyncThunk('channels/syncEmailNow', asy
   }
 })
 
+export const regenerateEmailWebhookSecret = createAsyncThunk(
+  'channels/regenerateEmailWebhookSecret',
+  async () => {
+    const res = await apiConnector.post('/channels/email/webhook-secret', {})
+
+    return res as { message: string; channel: CompanyEmailChannelItem }
+  }
+)
+
 export const fetchEmailMessages = createAsyncThunk(
   'channels/fetchEmailMessages',
   async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
@@ -355,6 +364,9 @@ export const channelsSlice = createSlice({
       })
       .addCase(syncEmailChannelNow.rejected, state => {
         state.syncing = false
+      })
+      .addCase(regenerateEmailWebhookSecret.fulfilled, (state, action) => {
+        state.emailChannel = action.payload.channel
       })
       .addCase(fetchEmailMessages.pending, state => {
         state.loadingEmails = true

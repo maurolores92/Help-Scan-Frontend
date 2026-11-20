@@ -74,6 +74,13 @@ const navigation = (): VerticalNavItemsType => {
       subject: 'companies'
     },
     {
+      title: 'Demos',
+      icon: 'tabler:presentation-analytics',
+      path: '/demos',
+      action: 'manage',
+      subject: 'demos'
+    },
+    {
       title: 'Planes y Cupos',
       icon: 'tabler:award',
       path: '/plans',

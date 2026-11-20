@@ -86,6 +86,68 @@ export const NOTIFICATION_CATEGORIES: NotificationCategoryMeta[] = [
       },
     ],
   },
+  {
+    key: 'documents',
+    label: 'Documentos y Canales de Recepción',
+    icon: 'tabler:file-invoice',
+    color: '#32A048',
+    types: [
+      {
+        key: 'document.uploaded',
+        label: 'Documento ingresado',
+        description: 'Cuando se carga un nuevo archivo PDF a la compañía',
+        emoji: '📄',
+      },
+      {
+        key: 'document.processed',
+        label: 'Documento procesado por IA',
+        description: 'Cuando finaliza la extracción de datos del comprobante',
+        emoji: '✨',
+      },
+      {
+        key: 'document.error',
+        label: 'Error en procesamiento',
+        description: 'Cuando ocurre un fallo al leer o procesar un archivo',
+        emoji: '⚠️',
+      },
+      {
+        key: 'channel.email_received',
+        label: 'Comprobante recibido por Correo',
+        description: 'Cuando ingresa un comprobante por correo IMAP o Webhook',
+        emoji: '📬',
+      },
+      {
+        key: 'channel.whatsapp_received',
+        label: 'Comprobante recibido por WhatsApp',
+        description: 'Cuando ingresa un comprobante vía WhatsApp',
+        emoji: '📲',
+      },
+      {
+        key: 'channel.telegram_received',
+        label: 'Comprobante recibido por Telegram',
+        description: 'Cuando ingresa un comprobante vía Telegram Bot',
+        emoji: '✈️',
+      },
+      {
+        key: 'channel.email_configured',
+        label: 'Canal de correo configurado',
+        description: 'Cuando se actualiza la configuración de correo electrónico',
+        emoji: '📧',
+      },
+      {
+        key: 'channel.whatsapp_configured',
+        label: 'Canal de WhatsApp configurado',
+        description: 'Cuando se configura la conexión de WhatsApp',
+        emoji: '💬',
+      },
+      {
+        key: 'channel.telegram_configured',
+        label: 'Bot de Telegram configurado',
+        description: 'Cuando se conecta el bot de Telegram de la empresa',
+        emoji: '✈️',
+      },
+    ],
+  },
 ]
 
 /** Obtiene el ícono de categoría según el tipo de notificación */

@@ -31,7 +31,7 @@ const HpSetupGuideModal: React.FC<HpSetupGuideModalProps> = ({ open, onClose, se
     },
     {
       title: '2. Abrir Configuración de Escaneado a Carpeta de Red / FTP',
-      desc: 'Navegá a la pestaña "Escaneado / Envío digital" -> "Configuración rápida" (Quick Sets) o "Escaneado a carpeta de red" y agregá un nuevo perfil llamado "Help Scan Nube".'
+      desc: 'Navegá a la pestaña "Escaneado / Envío digital" -> "Configuración rápida" (Quick Sets) o "Escaneado a carpeta de red" y agregá un nuevo perfil llamado "HelpScan Nube".'
     },
     {
       title: '3. Cargar los datos de conexión segura SFTP (Recomendado)',

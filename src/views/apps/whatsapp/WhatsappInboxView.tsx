@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
+import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import { fetchWhatsappMessages } from 'src/store/apps/channels'
 import { WhatsappMessageItem, WhatsappMessageStatus } from 'src/types/apps/channelTypes'
@@ -31,6 +32,7 @@ const STATUS_BADGE: Record<
 
 const WhatsappInboxView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const { socket } = useNotificationSocket()
   const {
     whatsappMessages,
     whatsappMessagesTotal,
@@ -67,6 +69,28 @@ const WhatsappInboxView: React.FC = () => {
   useEffect(() => {
     loadMessages()
   }, [loadMessages])
+
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRealtimeWhatsapp = () => {
+      loadMessages()
+    }
+
+    const handleNotification = (notif: any) => {
+      if (notif?.type === 'channel.whatsapp_received') {
+        loadMessages()
+      }
+    }
+
+    socket.on('whatsapp:message_received', handleRealtimeWhatsapp)
+    socket.on('notification', handleNotification)
+
+    return () => {
+      socket.off('whatsapp:message_received', handleRealtimeWhatsapp)
+      socket.off('notification', handleNotification)
+    }
+  }, [socket, loadMessages])
 
   const columns: GridColDef<WhatsappMessageItem>[] = [
     {

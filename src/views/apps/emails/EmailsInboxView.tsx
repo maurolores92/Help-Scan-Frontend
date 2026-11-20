@@ -18,6 +18,7 @@ import {
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
+import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import {
   fetchEmailMessages,
@@ -38,6 +39,7 @@ const STATUS_BADGE: Record<
 
 const EmailsInboxView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const { socket } = useNotificationSocket()
   const { emails, emailsTotal, emailsStats, loadingEmails, syncing } = useSelector(
     (state: RootState) => state.channels
   )
@@ -72,6 +74,29 @@ const EmailsInboxView: React.FC = () => {
   useEffect(() => {
     loadEmails()
   }, [loadEmails])
+
+  // Refresco en vivo por WebSocket al recibir correos vía IMAP IDLE o Webhook
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRealtimeEmail = () => {
+      loadEmails()
+    }
+
+    const handleNotification = (notif: any) => {
+      if (notif?.type === 'channel.email_received') {
+        loadEmails()
+      }
+    }
+
+    socket.on('email:received', handleRealtimeEmail)
+    socket.on('notification', handleNotification)
+
+    return () => {
+      socket.off('email:received', handleRealtimeEmail)
+      socket.off('notification', handleNotification)
+    }
+  }, [socket, loadEmails])
 
   const handleSyncNow = async () => {
     try {
