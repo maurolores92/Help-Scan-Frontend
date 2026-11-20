@@ -243,9 +243,9 @@ export const buildDocumentsColumns = (handlers: {
       minWidth: 155,
       renderCell: ({ row }: { row: DocumentItem }) => (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, py: 0.5, justifyContent: 'center' }}>
-          <StatusChip status={row.status} />
+          <StatusChip status={row.status} sx={{ height: 16, fontSize: '0.6rem' }} />
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'nowrap' }}>
-            <StatusChip status={row.source} sx={{ height: 20, fontSize: '0.68rem' }} />
+            <StatusChip status={row.source} sx={{ height: 16, fontSize: '0.6rem' }} />
             {row.ftpDeviceName && (
               <Tooltip title={`Impresora / Escáner: ${row.ftpDeviceName}`}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 90 }}>
