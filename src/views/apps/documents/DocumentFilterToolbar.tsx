@@ -232,6 +232,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
             <MenuItem value='FTP'>SFTP / Bandeja</MenuItem>
             <MenuItem value='EMAIL'>Correo Electrónico</MenuItem>
             <MenuItem value='WHATSAPP'>WhatsApp Business</MenuItem>
+            <MenuItem value='TELEGRAM'>Telegram Bot</MenuItem>
           </TextField>
         </Grid>
 

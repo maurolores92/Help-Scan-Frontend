@@ -27,6 +27,7 @@ const TENANT_ONLY_SUBJECTS = [
   'channels',
   'email_inbox',
   'whatsapp_inbox',
+  'telegram_inbox',
   'users',
   'users_menu',
   'roles',
@@ -141,6 +142,10 @@ const defineRulesFor = (
       can('read', 'whatsapp_inbox')
       can('manage', 'whatsapp_inbox')
     }
+    if (permission === 'VIEW_TELEGRAM_INBOX') {
+      can('read', 'telegram_inbox')
+      can('manage', 'telegram_inbox')
+    }
   })
 
   // Aplicar restricciones según los módulos habilitados para la compañía
@@ -158,6 +163,9 @@ const defineRulesFor = (
     }
     if (!hasMod('whatsapp')) {
       restrictSubjects(cannot, ['whatsapp_inbox'])
+    }
+    if (!hasMod('telegram')) {
+      restrictSubjects(cannot, ['telegram_inbox'])
     }
     if (!hasMod('email') && !hasMod('whatsapp') && !hasMod('telegram')) {
       restrictSubjects(cannot, ['channels'])

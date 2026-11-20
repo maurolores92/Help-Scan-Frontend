@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { Alert, Box, Card, Chip, Grid, Tab, Tabs, Typography } from '@mui/material'
+import { Alert, Box, Card, Grid, Tab, Tabs, Typography } from '@mui/material'
 import Icon from 'src/@core/components/icon'
 import { useAuth } from 'src/hooks/useAuth'
 import EmailChannelTab from './EmailChannelTab'
 import WhatsappChannelTab from './WhatsappChannelTab'
-import UpcomingChannelTab from './UpcomingChannelTab'
+import TelegramChannelTab from './TelegramChannelTab'
 
 type ChannelTabKey = 'email' | 'whatsapp' | 'telegram'
 
@@ -90,14 +90,9 @@ const ChannelsConfigView: React.FC = () => {
                 {availableTabs.includes('telegram') && (
                   <Tab
                     value='telegram'
+                    label='Telegram Bot'
                     icon={<Icon icon='tabler:brand-telegram' fontSize={20} />}
                     iconPosition='start'
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <span>Telegram Bot</span>
-                        <Chip label='Pronto' size='small' color='warning' sx={{ height: 20, fontSize: '0.7rem' }} />
-                      </Box>
-                    }
                   />
                 )}
               </Tabs>
@@ -109,19 +104,7 @@ const ChannelsConfigView: React.FC = () => {
 
             {activeTab === 'whatsapp' && availableTabs.includes('whatsapp') && <WhatsappChannelTab />}
 
-            {activeTab === 'telegram' && availableTabs.includes('telegram') && (
-              <UpcomingChannelTab
-                title='Telegram Bot Corporativo'
-                subtitle='Bot privado para carga instantánea de documentos por sucursal o sector'
-                icon='tabler:brand-telegram'
-                color='info'
-                features={[
-                  'Bot dedicado con validación de usuarios y permisos internos por sucursal.',
-                  'Envío directo de PDFs e imágenes sin compresión ni límites de tamaño.',
-                  'Consultas rápidas por chat sobre facturas pendientes de aprobación o vencimientos.'
-                ]}
-              />
-            )}
+            {activeTab === 'telegram' && availableTabs.includes('telegram') && <TelegramChannelTab />}
           </Grid>
         </>
       )}

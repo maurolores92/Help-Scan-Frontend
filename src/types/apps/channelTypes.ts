@@ -172,3 +172,74 @@ export interface WhatsappMessagesStats {
   skipped: number
   errors: number
 }
+
+// =========================================================================
+// TELEGRAM BOT PROPIO POR COMPAÑÍA (@BotFather)
+// =========================================================================
+
+export type TelegramSenderPolicy = 'ALL' | 'WHITELIST'
+
+export type TelegramSyncStatus = 'IDLE' | 'OK' | 'ERROR'
+
+export type TelegramMessageStatus = 'PROCESSED' | 'SKIPPED' | 'REJECTED_SENDER' | 'ERROR'
+
+export interface CompanyTelegramChannelItem {
+  id: number
+  companyId: number
+  botUsername: string | null
+  botDisplayName: string | null
+  hasBotToken: boolean
+  isPollingActive?: boolean
+  senderPolicy: TelegramSenderPolicy
+  allowedChatIds: string[]
+  ignoreGroups: boolean
+  isActive: boolean
+  processImages: boolean
+  autoReplyConfirmation: boolean
+  lastMessageAt: string | null
+  lastSyncStatus: TelegramSyncStatus
+  lastSyncMessage: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface UpsertTelegramChannelPayload {
+  botToken?: string
+  senderPolicy: TelegramSenderPolicy
+  allowedChatIds: string[]
+  ignoreGroups: boolean
+  isActive: boolean
+  processImages: boolean
+  autoReplyConfirmation: boolean
+}
+
+export interface TestTelegramConnectionPayload {
+  botToken?: string
+}
+
+export interface TelegramMessageItem {
+  id: number
+  companyId: number
+  channelId: number | null
+  externalMessageId: string
+  chatId: string
+  senderUsername: string | null
+  senderName: string | null
+  messageType: string
+  fileName: string | null
+  mimeType: string | null
+  caption: string | null
+  receivedAt: string
+  status: TelegramMessageStatus
+  statusReason: string | null
+  documentId: number | null
+  document?: EmailMessageDocumentRef | null
+  createdAt?: string
+}
+
+export interface TelegramMessagesStats {
+  total: number
+  processed: number
+  skipped: number
+  errors: number
+}

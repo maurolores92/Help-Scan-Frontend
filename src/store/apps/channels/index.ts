@@ -2,12 +2,17 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
 import apiConnector from 'src/services/api.service'
 import {
   CompanyEmailChannelItem,
+  CompanyTelegramChannelItem,
   CompanyWhatsappChannelItem,
   CompanyWhatsappConfigResponse,
   EmailMessageItem,
   EmailMessagesStats,
+  TelegramMessageItem,
+  TelegramMessagesStats,
   TestEmailConnectionPayload,
+  TestTelegramConnectionPayload,
   UpsertEmailChannelPayload,
+  UpsertTelegramChannelPayload,
   UpsertWhatsappChannelPayload,
   WhatsappMessageItem,
   WhatsappMessagesStats,
@@ -41,6 +46,17 @@ export interface ChannelsState {
   connectingWhatsapp: boolean
   disconnectingWhatsapp: boolean
   loadingWhatsappMessages: boolean
+
+  // Telegram Bot Propio
+  telegramChannel: CompanyTelegramChannelItem | null
+  telegramConfigured: boolean
+  telegramMessages: TelegramMessageItem[]
+  telegramMessagesTotal: number
+  telegramMessagesStats: TelegramMessagesStats
+  loadingTelegramConfig: boolean
+  savingTelegramConfig: boolean
+  testingTelegramConnection: boolean
+  loadingTelegramMessages: boolean
 }
 
 const initialState: ChannelsState = {
@@ -68,7 +84,17 @@ const initialState: ChannelsState = {
   savingWhatsappConfig: false,
   connectingWhatsapp: false,
   disconnectingWhatsapp: false,
-  loadingWhatsappMessages: false
+  loadingWhatsappMessages: false,
+
+  telegramChannel: null,
+  telegramConfigured: false,
+  telegramMessages: [],
+  telegramMessagesTotal: 0,
+  telegramMessagesStats: { total: 0, processed: 0, skipped: 0, errors: 0 },
+  loadingTelegramConfig: false,
+  savingTelegramConfig: false,
+  testingTelegramConnection: false,
+  loadingTelegramMessages: false
 }
 
 export const fetchEmailChannelConfig = createAsyncThunk('channels/fetchEmailConfig', async () => {
@@ -202,6 +228,69 @@ export const fetchWhatsappMessages = createAsyncThunk(
       page: number
       limit: number
       stats: WhatsappMessagesStats
+    }
+  }
+)
+
+// =========================================================================
+// THUNKS TELEGRAM BOT PROPIO
+// =========================================================================
+
+export const fetchTelegramChannelConfig = createAsyncThunk(
+  'channels/fetchTelegramConfig',
+  async () => {
+    const res = await apiConnector.get('/channels/telegram')
+
+    return res as { configured: boolean; channel: CompanyTelegramChannelItem | null }
+  }
+)
+
+export const saveTelegramChannelConfig = createAsyncThunk(
+  'channels/saveTelegramConfig',
+  async (payload: UpsertTelegramChannelPayload) => {
+    const res = await apiConnector.post('/channels/telegram', payload)
+
+    return res as {
+      message: string
+      configured: boolean
+      channel: CompanyTelegramChannelItem | null
+    }
+  }
+)
+
+export const testTelegramChannelConnection = createAsyncThunk(
+  'channels/testTelegramConnection',
+  async (payload: TestTelegramConnectionPayload) => {
+    const res = await apiConnector.post('/channels/telegram/test', payload)
+
+    return res as {
+      ok: boolean
+      botId: number
+      botUsername: string
+      botDisplayName: string
+      message: string
+    }
+  }
+)
+
+export const fetchTelegramMessages = createAsyncThunk(
+  'channels/fetchTelegramMessages',
+  async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams()
+    if (params?.search) query.set('search', params.search)
+    if (params?.status) query.set('status', params.status)
+    if (params?.page) query.set('page', String(params.page))
+    if (params?.limit) query.set('limit', String(params.limit))
+
+    const qs = query.toString()
+    const res = await apiConnector.get(`/channels/telegram/messages${qs ? `?${qs}` : ''}`)
+
+    return res as {
+      items: TelegramMessageItem[]
+      total: number
+      page: number
+      limit: number
+      stats: TelegramMessagesStats
     }
   }
 )
@@ -368,6 +457,51 @@ export const channelsSlice = createSlice({
       })
       .addCase(fetchWhatsappMessages.rejected, state => {
         state.loadingWhatsappMessages = false
+      })
+
+      // Telegram reducers
+      .addCase(fetchTelegramChannelConfig.pending, state => {
+        state.loadingTelegramConfig = true
+      })
+      .addCase(fetchTelegramChannelConfig.fulfilled, (state, action) => {
+        state.loadingTelegramConfig = false
+        state.telegramConfigured = action.payload.configured
+        state.telegramChannel = action.payload.channel
+      })
+      .addCase(fetchTelegramChannelConfig.rejected, state => {
+        state.loadingTelegramConfig = false
+      })
+      .addCase(saveTelegramChannelConfig.pending, state => {
+        state.savingTelegramConfig = true
+      })
+      .addCase(saveTelegramChannelConfig.fulfilled, (state, action) => {
+        state.savingTelegramConfig = false
+        state.telegramConfigured = action.payload.configured
+        state.telegramChannel = action.payload.channel
+      })
+      .addCase(saveTelegramChannelConfig.rejected, state => {
+        state.savingTelegramConfig = false
+      })
+      .addCase(testTelegramChannelConnection.pending, state => {
+        state.testingTelegramConnection = true
+      })
+      .addCase(testTelegramChannelConnection.fulfilled, state => {
+        state.testingTelegramConnection = false
+      })
+      .addCase(testTelegramChannelConnection.rejected, state => {
+        state.testingTelegramConnection = false
+      })
+      .addCase(fetchTelegramMessages.pending, state => {
+        state.loadingTelegramMessages = true
+      })
+      .addCase(fetchTelegramMessages.fulfilled, (state, action) => {
+        state.loadingTelegramMessages = false
+        state.telegramMessages = action.payload.items
+        state.telegramMessagesTotal = action.payload.total
+        state.telegramMessagesStats = action.payload.stats
+      })
+      .addCase(fetchTelegramMessages.rejected, state => {
+        state.loadingTelegramMessages = false
       })
   }
 })

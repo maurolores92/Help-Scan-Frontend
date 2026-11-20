@@ -50,6 +50,13 @@ const navigation = (): VerticalNavItemsType => {
       action: 'read',
       subject: 'whatsapp_inbox'
     },
+    {
+      title: 'Mensajes Telegram',
+      icon: 'tabler:brand-telegram',
+      path: '/telegram',
+      action: 'read',
+      subject: 'telegram_inbox'
+    },
 
     // ==========================================
     // 3. PLATAFORMA (EXCLUSIVO SUPER ADMIN)
