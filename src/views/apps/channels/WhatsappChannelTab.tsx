@@ -60,7 +60,6 @@ const WhatsappChannelTab: React.FC = () => {
   const [ignoreGroups, setIgnoreGroups] = useState(true)
   const [isActive, setIsActive] = useState(true)
   const [processImages, setProcessImages] = useState(true)
-  const [autoReplyConfirmation, setAutoReplyConfirmation] = useState(true)
 
   useEffect(() => {
     dispatch(fetchWhatsappChannelConfig())
@@ -73,7 +72,6 @@ const WhatsappChannelTab: React.FC = () => {
       setIgnoreGroups(whatsappChannel.ignoreGroups !== false)
       setIsActive(whatsappChannel.isActive)
       setProcessImages(whatsappChannel.processImages)
-      setAutoReplyConfirmation(whatsappChannel.autoReplyConfirmation)
     }
   }, [whatsappChannel])
 
@@ -160,7 +158,7 @@ const WhatsappChannelTab: React.FC = () => {
           ignoreGroups,
           isActive,
           processImages,
-          autoReplyConfirmation
+          autoReplyConfirmation: false
         })
       ).unwrap()
       toast.success('Preferencias de WhatsApp guardadas')
@@ -512,21 +510,12 @@ const WhatsappChannelTab: React.FC = () => {
                       }
                       label='Convertir fotos (JPG/PNG) de remitos o tickets a PDF automáticamente para OCR/IA'
                     />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={autoReplyConfirmation}
-                          onChange={e => setAutoReplyConfirmation(e.target.checked)}
-                        />
-                      }
-                      label='Responder confirmación automática por WhatsApp con los datos extraídos por IA'
-                    />
                   </Box>
                 </Grid>
 
                 <Grid item xs={12}>
                   <Alert severity='info'>
-                    <strong>Tip:</strong> Para mayor orden, te recomendamos vincular una línea administrativa dedicada (ej. <em>WhatsApp Comprobantes</em>) aunque también podés usar cualquier línea WhatsApp Business o estándar.
+                    <strong>Recepción interna silenciosa:</strong> Solo se obtienen y procesan mensajes que incluyen archivos adjuntos (PDF o imágenes). No se envían respuestas salientes por WhatsApp.
                   </Alert>
                 </Grid>
 
