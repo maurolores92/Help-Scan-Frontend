@@ -30,30 +30,10 @@ const resolveDocumentTypeIcon = (type?: string | null) => {
   return 'tabler:file-type-pdf'
 }
 
-const formatAmount = (amount?: number | string | null, currency?: string | null) => {
-  if (amount === null || amount === undefined || amount === '') return null
-  const num = Number(amount)
-  if (!Number.isFinite(num)) return null
-  const prefix = currency || '$'
-
-  return `${prefix} ${num.toLocaleString('es-AR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })}`
-}
-
-const PAYMENT_BADGE: Record<string, { label: string; color: 'default' | 'warning' | 'info' | 'success' | 'error' }> = {
-  PENDING: { label: 'Pendiente pago', color: 'warning' },
-  SCHEDULED: { label: 'Programado', color: 'info' },
-  PAID: { label: 'Pagado', color: 'success' },
-  NOT_APPLICABLE: { label: 'No aplica', color: 'default' }
-}
-
 export const buildDocumentsColumns = (handlers: {
   onPreview: (doc: DocumentItem) => void
   onValidate: (doc: DocumentItem) => void
   onDelete: (doc: DocumentItem) => void
-  onEditPayment?: (doc: DocumentItem) => void
 }): GridColDef[] => [
     {
       field: 'documentType',
@@ -174,11 +154,10 @@ export const buildDocumentsColumns = (handlers: {
     },
     {
       field: 'documentDate',
-      headerName: 'Fecha / Monto',
-      flex: 0.12,
-      minWidth: 125,
+      headerName: 'Fecha',
+      flex: 0.1,
+      minWidth: 110,
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const formattedAmount = formatAmount(row.totalAmount, row.currency)
         const dateStr = row.documentDate
           ? row.documentDate
           : new Date(row.createdAt).toLocaleDateString('es-ES', {
@@ -188,64 +167,9 @@ export const buildDocumentsColumns = (handlers: {
           })
 
         return (
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant='body2' noWrap sx={{ fontWeight: formattedAmount ? 600 : 400 }}>
-              {formattedAmount || dateStr}
-            </Typography>
-            {formattedAmount && (
-              <Typography variant='caption' noWrap sx={{ display: 'block', color: 'text.secondary' }}>
-                {dateStr}
-              </Typography>
-            )}
-          </Box>
-        )
-      }
-    },
-    {
-      field: 'paymentStatus',
-      headerName: 'Pago',
-      flex: 0.12,
-      minWidth: 130,
-      renderCell: ({ row }: { row: DocumentItem }) => {
-        const todayIso = new Date().toISOString().slice(0, 10)
-        const payStatus = row.paymentStatus || 'PENDING'
-        const isOverdue =
-          Boolean(row.dueDate) &&
-          row.dueDate! < todayIso &&
-          (payStatus === 'PENDING' || payStatus === 'SCHEDULED')
-        const payBadge = isOverdue
-          ? { label: 'Vencido', color: 'error' as const }
-          : PAYMENT_BADGE[payStatus] || PAYMENT_BADGE.PENDING
-        const subDate =
-          payStatus === 'PAID' && row.paidAt
-            ? `Pagado: ${row.paidAt}`
-            : row.dueDate && payStatus !== 'NOT_APPLICABLE'
-              ? `Vto: ${row.dueDate}`
-              : row.paymentReference || ''
-
-        return (
-          <Box sx={{ overflow: 'hidden' }}>
-            <Tooltip title={row.paymentReference ? `Ref: ${row.paymentReference}` : 'Actualizar estado de pago'}>
-              <Chip
-                size='small'
-                label={payBadge.label}
-                color={payBadge.color}
-                variant='outlined'
-                onClick={handlers.onEditPayment ? () => handlers.onEditPayment?.(row) : undefined}
-                sx={{
-                  height: 20,
-                  fontSize: '0.68rem',
-                  fontWeight: 600,
-                  cursor: handlers.onEditPayment ? 'pointer' : 'default'
-                }}
-              />
-            </Tooltip>
-            {subDate && (
-              <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.3, color: isOverdue ? 'error.main' : 'text.secondary' }}>
-                {subDate}
-              </Typography>
-            )}
-          </Box>
+          <Typography variant='body2' noWrap sx={{ color: 'text.primary' }}>
+            {dateStr}
+          </Typography>
         )
       }
     },
@@ -322,8 +246,8 @@ export const buildDocumentsColumns = (handlers: {
     {
       field: 'actions',
       headerName: 'Acciones',
-      flex: 0.11,
-      minWidth: 130,
+      flex: 0.1,
+      minWidth: 115,
       sortable: false,
       renderCell: ({ row }: { row: DocumentItem }) => {
         const isPendingApproval = row.status === 'PENDING_APPROVAL'
@@ -342,17 +266,6 @@ export const buildDocumentsColumns = (handlers: {
                 />
               </IconButton>
             </Tooltip>
-            {handlers.onEditPayment && (
-              <Tooltip title='Estado de pago y vencimiento'>
-                <IconButton
-                  size='small'
-                  color={row.paymentStatus === 'PAID' ? 'success' : 'secondary'}
-                  onClick={() => handlers.onEditPayment?.(row)}
-                >
-                  <Icon icon='tabler:cash' fontSize={19} />
-                </IconButton>
-              </Tooltip>
-            )}
             <Tooltip title='Ver PDF y Ficha OCR'>
               <IconButton size='small' color='primary' onClick={() => handlers.onPreview(row)}>
                 <Icon icon='tabler:eye' fontSize={19} />
