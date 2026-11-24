@@ -4,25 +4,30 @@ import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Typography from '@mui/material/Typography'
 import Tooltip from '@mui/material/Tooltip'
-import CircularProgress from '@mui/material/CircularProgress'
 import { GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
 import { DocumentItem } from 'src/store/apps/documents'
 import StatusChip from 'src/components/common/StatusChip'
 
-const formatBytes = (bytes: number) => {
-  if (!bytes) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`
-}
-
-const formatDocType = (type?: string | null) => {
+const formatDocTypeUpper = (type?: string | null) => {
   if (!type) return null
 
-  return type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  return type.replace(/_/g, ' ').trim().toUpperCase()
+}
+
+const resolveDocumentTypeIcon = (type?: string | null) => {
+  const normalized = (type || '').toLowerCase().trim()
+  if (normalized.startsWith('factura')) return 'tabler:file-invoice'
+  if (normalized === 'presupuesto') return 'tabler:file-dollar'
+  if (normalized === 'nota_pedido') return 'tabler:clipboard-list'
+  if (normalized === 'remito') return 'tabler:truck-delivery'
+  if (normalized === 'recibo') return 'tabler:receipt'
+  if (normalized === 'orden_compra') return 'tabler:shopping-cart'
+  if (normalized === 'orden_servicio') return 'tabler:tool'
+  if (normalized === 'contrato') return 'tabler:file-certificate'
+  if (normalized === 'legajo') return 'tabler:users'
+
+  return 'tabler:file-type-pdf'
 }
 
 const formatAmount = (amount?: number | string | null, currency?: string | null) => {
@@ -37,33 +42,41 @@ const formatAmount = (amount?: number | string | null, currency?: string | null)
   })}`
 }
 
+const PAYMENT_BADGE: Record<string, { label: string; color: 'default' | 'warning' | 'info' | 'success' | 'error' }> = {
+  PENDING: { label: 'Pendiente pago', color: 'warning' },
+  SCHEDULED: { label: 'Programado', color: 'info' },
+  PAID: { label: 'Pagado', color: 'success' },
+  NOT_APPLICABLE: { label: 'No aplica', color: 'default' }
+}
+
 export const buildDocumentsColumns = (handlers: {
   onPreview: (doc: DocumentItem) => void
   onValidate: (doc: DocumentItem) => void
-  onReprocess: (doc: DocumentItem) => void
   onDelete: (doc: DocumentItem) => void
-  reprocessingId?: number | null
+  onEditPayment?: (doc: DocumentItem) => void
 }): GridColDef[] => [
     {
       field: 'documentType',
-      headerName: 'Tipo Detectado',
+      headerName: 'Tipo',
       flex: 0.14,
-      minWidth: 145,
+      minWidth: 140,
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const label = formatDocType(row.documentType)
+        const label = formatDocTypeUpper(row.documentType)
 
         return label ? (
           <Box sx={{ overflow: 'hidden' }}>
-            <Chip label={label} size='small' color='primary' variant='outlined' sx={{ fontWeight: 600 }} />
+            <Typography variant='body2' noWrap sx={{ fontWeight: 700, letterSpacing: 0.3, color: 'text.primary' }}>
+              {label}
+            </Typography>
             {row.documentNumber && (
-              <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.3, color: 'text.secondary' }}>
+              <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.2, color: 'text.secondary' }}>
                 N° {row.documentNumber}
               </Typography>
             )}
           </Box>
         ) : (
           <Typography variant='caption' sx={{ color: 'text.disabled' }}>
-            Sin clasificar
+            SIN CLASIFICAR
           </Typography>
         )
       }
@@ -189,66 +202,112 @@ export const buildDocumentsColumns = (handlers: {
       }
     },
     {
-      field: 'originalName',
-      headerName: 'Documento PDF',
-      flex: 0.2,
-      minWidth: 250,
+      field: 'paymentStatus',
+      headerName: 'Pago',
+      flex: 0.12,
+      minWidth: 130,
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const hashValue = row.fileHash || row.sha256Hash
+        const todayIso = new Date().toISOString().slice(0, 10)
+        const payStatus = row.paymentStatus || 'PENDING'
+        const isOverdue =
+          Boolean(row.dueDate) &&
+          row.dueDate! < todayIso &&
+          (payStatus === 'PENDING' || payStatus === 'SCHEDULED')
+        const payBadge = isOverdue
+          ? { label: 'Vencido', color: 'error' as const }
+          : PAYMENT_BADGE[payStatus] || PAYMENT_BADGE.PENDING
+        const subDate =
+          payStatus === 'PAID' && row.paidAt
+            ? `Pagado: ${row.paidAt}`
+            : row.dueDate && payStatus !== 'NOT_APPLICABLE'
+              ? `Vto: ${row.dueDate}`
+              : row.paymentReference || ''
 
         return (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, overflow: 'hidden', width: '100%' }}>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                flexShrink: 0,
-                borderRadius: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'error.light',
-                color: 'error.main'
-              }}
-            >
-              <Icon icon='tabler:file-type-pdf' fontSize={21} />
-            </Box>
-            <Box sx={{ overflow: 'hidden', flex: 1 }}>
-              <Typography
-                variant='body2'
-                noWrap
+          <Box sx={{ overflow: 'hidden' }}>
+            <Tooltip title={row.paymentReference ? `Ref: ${row.paymentReference}` : 'Actualizar estado de pago'}>
+              <Chip
+                size='small'
+                label={payBadge.label}
+                color={payBadge.color}
+                variant='outlined'
+                onClick={handlers.onEditPayment ? () => handlers.onEditPayment?.(row) : undefined}
                 sx={{
+                  height: 20,
+                  fontSize: '0.68rem',
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  '&:hover': { color: 'primary.main', textDecoration: 'underline' }
+                  cursor: handlers.onEditPayment ? 'pointer' : 'default'
                 }}
-                onClick={() => handlers.onPreview(row)}
-              >
-                {row.originalName}
+              />
+            </Tooltip>
+            {subDate && (
+              <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.3, color: isOverdue ? 'error.main' : 'text.secondary' }}>
+                {subDate}
               </Typography>
-              <Typography variant='caption' noWrap sx={{ display: 'block', color: 'text.secondary' }}>
-                {row.summary
-                  ? row.summary
-                  : `${formatBytes(row.fileSize)}${hashValue ? ` · ${hashValue.substring(0, 10)}...` : ''}`}
-              </Typography>
-            </Box>
+            )}
           </Box>
         )
       }
     },
     {
-      field: 'status',
-      headerName: 'Estado / Origen',
-      flex: 0.15,
-      minWidth: 155,
+      field: 'originalName',
+      headerName: 'PDF',
+      width: 82,
+      minWidth: 78,
+      align: 'center',
+      headerAlign: 'center',
+      sortable: false,
       renderCell: ({ row }: { row: DocumentItem }) => (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.6, py: 0.5, justifyContent: 'center' }}>
-          <StatusChip status={row.status} sx={{ height: 16, fontSize: '0.6rem' }} />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'nowrap' }}>
-            <StatusChip status={row.source} sx={{ height: 16, fontSize: '0.6rem' }} />
+        <Tooltip title={`Previsualizar: ${row.originalName}`}>
+          <IconButton
+            size='small'
+            onClick={() => handlers.onPreview(row)}
+            sx={{
+              width: 32,
+              height: 32,
+              borderRadius: 1.25,
+              backgroundColor: 'error.light',
+              color: 'error.main',
+              '&:hover': {
+                backgroundColor: 'error.main',
+                color: 'common.white'
+              }
+            }}
+          >
+            <Icon icon={resolveDocumentTypeIcon(row.documentType)} fontSize={19} />
+          </IconButton>
+        </Tooltip>
+      )
+    },
+    {
+      field: 'source',
+      headerName: 'Origen',
+      flex: 0.13,
+      minWidth: 135,
+      renderCell: ({ row }: { row: DocumentItem }) => {
+        const warnings = Array.isArray(row.validationWarnings) ? row.validationWarnings : []
+        const hasDuplicate = warnings.some(w => w.code === 'DUPLICATE_FISCAL')
+        const warningsTooltip = warnings.map(w => `• ${w.message}`).join('\n')
+
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 0, justifyContent: 'center' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6, flexWrap: 'nowrap' }}>
+              <StatusChip status={row.source} sx={{ height: 18, fontSize: '0.65rem' }} />
+              {warnings.length > 0 && (
+                <Tooltip title={<span style={{ whiteSpace: 'pre-line' }}>{warningsTooltip}</span>}>
+                  <Chip
+                    size='small'
+                    color={hasDuplicate ? 'error' : 'warning'}
+                    label={hasDuplicate ? 'Duplicado' : `${warnings.length} alerta${warnings.length > 1 ? 's' : ''}`}
+                    icon={<Icon icon='tabler:alert-triangle' fontSize={12} />}
+                    sx={{ height: 18, fontSize: '0.6rem', fontWeight: 700 }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
             {row.ftpDeviceName && (
               <Tooltip title={`Impresora / Escáner: ${row.ftpDeviceName}`}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 90 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 120 }}>
                   <Icon icon='tabler:printer' fontSize={13} />
                   <Typography variant='caption' color='text.secondary' noWrap sx={{ fontSize: '0.68rem' }}>
                     {row.ftpDeviceName}
@@ -257,21 +316,20 @@ export const buildDocumentsColumns = (handlers: {
               </Tooltip>
             )}
           </Box>
-        </Box>
-      )
+        )
+      }
     },
     {
       field: 'actions',
       headerName: 'Acciones',
       flex: 0.11,
-      minWidth: 125,
+      minWidth: 130,
       sortable: false,
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const isReprocessing = handlers.reprocessingId === row.id || row.status === 'PROCESSING'
         const isPendingApproval = row.status === 'PENDING_APPROVAL'
 
         return (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
             <Tooltip title={isPendingApproval ? 'Revisar y Validar Datos (Split-View)' : 'Editar / Validar Datos'}>
               <IconButton
                 size='small'
@@ -284,26 +342,21 @@ export const buildDocumentsColumns = (handlers: {
                 />
               </IconButton>
             </Tooltip>
+            {handlers.onEditPayment && (
+              <Tooltip title='Estado de pago y vencimiento'>
+                <IconButton
+                  size='small'
+                  color={row.paymentStatus === 'PAID' ? 'success' : 'secondary'}
+                  onClick={() => handlers.onEditPayment?.(row)}
+                >
+                  <Icon icon='tabler:cash' fontSize={19} />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title='Ver PDF y Ficha OCR'>
               <IconButton size='small' color='primary' onClick={() => handlers.onPreview(row)}>
                 <Icon icon='tabler:eye' fontSize={19} />
               </IconButton>
-            </Tooltip>
-            <Tooltip title='Reprocesar extracción OCR'>
-              <span>
-                <IconButton
-                  size='small'
-                  color='info'
-                  disabled={isReprocessing}
-                  onClick={() => handlers.onReprocess(row)}
-                >
-                  {isReprocessing ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <Icon icon='tabler:refresh' fontSize={18} />
-                  )}
-                </IconButton>
-              </span>
             </Tooltip>
             <Tooltip title='Eliminar'>
               <IconButton size='small' color='error' onClick={() => handlers.onDelete(row)}>

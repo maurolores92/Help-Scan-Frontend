@@ -5,12 +5,16 @@ import { AppDispatch, RootState } from 'src/store'
 import {
   deleteDocument,
   deleteMultipleDocuments,
+  DocumentExportFormat,
   DocumentItem,
+  DocumentPaymentStatus,
+  exportFilteredDocuments,
   fetchDocumentById,
   fetchDocumentFacets,
   fetchDocuments,
   reprocessDocument,
   syncFtpDocuments,
+  updateDocumentPaymentStatus,
   uploadMultipleDocuments,
   validateDocument,
   rejectDocument,
@@ -44,6 +48,7 @@ export const useDocumentsManager = () => {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [status, setStatus] = useState('')
+  const [paymentFilter, setPaymentFilter] = useState('')
   const [source, setSource] = useState('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
@@ -51,6 +56,9 @@ export const useDocumentsManager = () => {
 
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
   const [validatingDoc, setValidatingDoc] = useState<DocumentItem | null>(null)
+  const [paymentDoc, setPaymentDoc] = useState<DocumentItem | null>(null)
+  const [updatingPayment, setUpdatingPayment] = useState(false)
+  const [exportingFormat, setExportingFormat] = useState<DocumentExportFormat | null>(null)
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [selectedRowIds, setSelectedRowIds] = useState<number[]>([])
@@ -67,6 +75,11 @@ export const useDocumentsManager = () => {
     return () => clearTimeout(timer)
   }, [searchInput])
 
+  const resolvedPaymentParams =
+    paymentFilter === 'OVERDUE' || paymentFilter === 'DUE_SOON'
+      ? { paymentStatus: '', dueFilter: paymentFilter }
+      : { paymentStatus: paymentFilter, dueFilter: '' }
+
   const loadData = useCallback(() => {
     dispatch(
       fetchDocuments({
@@ -78,12 +91,27 @@ export const useDocumentsManager = () => {
         dateFrom,
         dateTo,
         status,
+        paymentStatus: resolvedPaymentParams.paymentStatus,
+        dueFilter: resolvedPaymentParams.dueFilter,
         source
       })
     )
     dispatch(fetchDocumentFacets(undefined))
     dispatch(fetchMyCompanyQuota())
-  }, [dispatch, page, pageSize, debouncedSearch, documentType, purchaseOrderNumber, dateFrom, dateTo, status, source])
+  }, [
+    dispatch,
+    page,
+    pageSize,
+    debouncedSearch,
+    documentType,
+    purchaseOrderNumber,
+    dateFrom,
+    dateTo,
+    status,
+    resolvedPaymentParams.paymentStatus,
+    resolvedPaymentParams.dueFilter,
+    source
+  ])
 
   useEffect(() => {
     loadData()
@@ -116,9 +144,52 @@ export const useDocumentsManager = () => {
     setDateFrom('')
     setDateTo('')
     setStatus('')
+    setPaymentFilter('')
     setSource('')
     setPage(0)
     setSelectedRowIds([])
+  }
+
+  const handleUpdatePaymentStatus = async (payload: {
+    id: number
+    paymentStatus: DocumentPaymentStatus
+    paidAt?: string | null
+    paymentReference?: string | null
+  }) => {
+    try {
+      setUpdatingPayment(true)
+      await dispatch(updateDocumentPaymentStatus(payload)).unwrap()
+      toast.success('Estado de pago actualizado')
+      setPaymentDoc(null)
+    } catch (err: any) {
+      toast.error(err?.message || 'Error al actualizar estado de pago')
+    } finally {
+      setUpdatingPayment(false)
+    }
+  }
+
+  const handleExport = async (format: DocumentExportFormat) => {
+    try {
+      setExportingFormat(format)
+      await exportFilteredDocuments({
+        format,
+        search: debouncedSearch,
+        documentType,
+        purchaseOrderNumber,
+        dateFrom,
+        dateTo,
+        status,
+        paymentStatus: resolvedPaymentParams.paymentStatus,
+        dueFilter: resolvedPaymentParams.dueFilter,
+        source,
+        ids: selectedRowIds.length > 0 ? selectedRowIds : undefined
+      })
+      toast.success(`Exportación ${format.toUpperCase()} generada correctamente`)
+    } catch (err: any) {
+      toast.error(err?.message || 'No se pudo generar la exportación')
+    } finally {
+      setExportingFormat(null)
+    }
   }
 
   const handleValidate = async (payload: ValidateDocumentPayload) => {
@@ -263,7 +334,7 @@ export const useDocumentsManager = () => {
   }
 
   const hasActiveFilters = Boolean(
-    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source
+    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source || paymentFilter
   )
 
   return {
@@ -290,6 +361,8 @@ export const useDocumentsManager = () => {
     setDateTo,
     status,
     setStatus,
+    paymentFilter,
+    setPaymentFilter,
     source,
     setSource,
     page,
@@ -302,6 +375,10 @@ export const useDocumentsManager = () => {
     setPreviewDoc,
     validatingDoc,
     setValidatingDoc,
+    paymentDoc,
+    setPaymentDoc,
+    updatingPayment,
+    exportingFormat,
     docToDelete,
     setDocToDelete,
     isDeleting,
@@ -318,7 +395,9 @@ export const useDocumentsManager = () => {
     handleDeleteConfirm,
     handleBulkDeleteConfirm,
     handleValidate,
-    handleReject
+    handleReject,
+    handleUpdatePaymentStatus,
+    handleExport
   }
 }
 

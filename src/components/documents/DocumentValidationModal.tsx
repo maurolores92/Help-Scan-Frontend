@@ -523,6 +523,23 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
               </Alert>
             )}
 
+            {Array.isArray(doc.validationWarnings) && doc.validationWarnings.length > 0 && (
+              <Alert
+                severity={doc.validationWarnings.some(w => w.severity === 'error') ? 'error' : 'warning'}
+                icon={<Icon icon='tabler:alert-triangle' />}
+                sx={{ mb: 3 }}
+              >
+                <Typography variant='subtitle2' sx={{ fontWeight: 700, mb: 0.5 }}>
+                  Controles fiscales y administrativos detectaron observaciones:
+                </Typography>
+                {doc.validationWarnings.map((w, idx) => (
+                  <Typography key={`${w.code}-${idx}`} variant='body2' sx={{ display: 'block' }}>
+                    • {w.message}
+                  </Typography>
+                ))}
+              </Alert>
+            )}
+
             {/* SECCIÓN 1: Identificación del Documento */}
             <Typography variant='subtitle2' sx={{ fontWeight: 700, color: 'primary.main', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1 }}>
               <Icon icon='tabler:file-invoice' fontSize={18} />

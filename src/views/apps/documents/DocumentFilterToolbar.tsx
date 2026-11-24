@@ -1,17 +1,21 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Grid from '@mui/material/Grid'
 import TextField from '@mui/material/TextField'
 import MenuItem from '@mui/material/MenuItem'
+import Menu from '@mui/material/Menu'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
 import Button from '@mui/material/Button'
 import InputAdornment from '@mui/material/InputAdornment'
 import IconButton from '@mui/material/IconButton'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
+import CircularProgress from '@mui/material/CircularProgress'
 import Icon from 'src/@core/components/icon'
 import SyncFtpButton from 'src/components/documents/SyncFtpButton'
 import { useAuth } from 'src/hooks/useAuth'
-import { DocumentTypeFacet } from 'src/store/apps/documents'
+import { DocumentExportFormat, DocumentTypeFacet } from 'src/store/apps/documents'
 
 interface DocumentFilterToolbarProps {
   search: string
@@ -27,6 +31,8 @@ interface DocumentFilterToolbarProps {
   onDateToChange: (value: string) => void
   status?: string
   onStatusChange?: (value: string) => void
+  paymentFilter?: string
+  onPaymentFilterChange?: (value: string) => void
   source: string
   onSourceChange: (value: string) => void
   onResetFilters: () => void
@@ -35,6 +41,9 @@ interface DocumentFilterToolbarProps {
   showUpload: boolean
   onSyncFtp: () => Promise<void> | void
   isSyncing: boolean
+  onExport?: (format: DocumentExportFormat) => Promise<void> | void
+  exportingFormat?: DocumentExportFormat | null
+  selectedCount?: number
 }
 
 const TYPE_ICONS: Record<string, string> = {
@@ -67,6 +76,8 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
   onDateFromChange,
   dateTo,
   onDateToChange,
+  paymentFilter = '',
+  onPaymentFilterChange,
   source,
   onSourceChange,
   onResetFilters,
@@ -74,9 +85,13 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
   onToggleUpload,
   showUpload,
   onSyncFtp,
-  isSyncing
+  isSyncing,
+  onExport,
+  exportingFormat = null,
+  selectedCount = 0
 }) => {
   const { user } = useAuth()
+  const [exportAnchorEl, setExportAnchorEl] = useState<null | HTMLElement>(null)
   const enabledModules =
     user?.company && typeof user.company === 'object' && Array.isArray(user.company.enabledModules)
       ? user.company.enabledModules
@@ -180,6 +195,84 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           {hasSftpModule && <SyncFtpButton onSync={onSyncFtp} loading={isSyncing} />}
 
+          {onExport && (
+            <>
+              <Button
+                variant='outlined'
+                color='secondary'
+                disabled={Boolean(exportingFormat)}
+                onClick={e => setExportAnchorEl(e.currentTarget)}
+                startIcon={
+                  exportingFormat ? (
+                    <CircularProgress size={16} color='inherit' />
+                  ) : (
+                    <Icon icon='tabler:download' />
+                  )
+                }
+                endIcon={<Icon icon='tabler:chevron-down' fontSize={16} />}
+              >
+                {exportingFormat
+                  ? `Exportando ${exportingFormat.toUpperCase()}...`
+                  : selectedCount > 0
+                    ? `Exportar (${selectedCount})`
+                    : 'Exportar'}
+              </Button>
+              <Menu
+                anchorEl={exportAnchorEl}
+                open={Boolean(exportAnchorEl)}
+                onClose={() => setExportAnchorEl(null)}
+              >
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    onExport('xlsx')
+                  }}
+                >
+                  <ListItemIcon>
+                    <Icon icon='tabler:file-spreadsheet' fontSize={19} />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary='Excel (.xlsx)'
+                    secondary={selectedCount > 0 ? `${selectedCount} seleccionados` : 'Planilla con totales y resumen'}
+                  />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    onExport('csv')
+                  }}
+                >
+                  <ListItemIcon>
+                    <Icon icon='tabler:file-type-csv' fontSize={19} />
+                  </ListItemIcon>
+                  <ListItemText primary='CSV (.csv)' secondary='Compatible con Tango / Softland / Bejerman' />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    onExport('pdf')
+                  }}
+                >
+                  <ListItemIcon>
+                    <Icon icon='tabler:file-type-pdf' fontSize={19} />
+                  </ListItemIcon>
+                  <ListItemText primary='Reporte PDF (.pdf)' secondary='Listado apaisado listo para compartir' />
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    setExportAnchorEl(null)
+                    onExport('zip')
+                  }}
+                >
+                  <ListItemIcon>
+                    <Icon icon='tabler:file-zip' fontSize={19} />
+                  </ListItemIcon>
+                  <ListItemText primary='Paquete ZIP (.zip)' secondary='PDFs originales + índice CSV' />
+                </MenuItem>
+              </Menu>
+            </>
+          )}
+
           <Button
             variant={showUpload ? 'outlined' : 'contained'}
             color='primary'
@@ -191,9 +284,9 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
         </Box>
       </Box>
 
-      {/* Filtros secundarios: N° O.C./Referencia, Origen, Rango de Fechas */}
+      {/* Filtros secundarios: N° O.C./Referencia, Estado Pago, Origen, Rango de Fechas */}
       <Grid container spacing={2} alignItems='center'>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.5}>
           <TextField
             fullWidth
             size='small'
@@ -218,7 +311,26 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={2.5}>
+          <TextField
+            select
+            fullWidth
+            size='small'
+            label='Pago / Vencimiento'
+            value={paymentFilter}
+            onChange={e => onPaymentFilterChange?.(e.target.value)}
+          >
+            <MenuItem value=''>Todos los estados</MenuItem>
+            <MenuItem value='PENDING'>Pendiente de pago</MenuItem>
+            <MenuItem value='SCHEDULED'>Programado</MenuItem>
+            <MenuItem value='PAID'>Pagado</MenuItem>
+            <MenuItem value='OVERDUE'>Vencidos</MenuItem>
+            <MenuItem value='DUE_SOON'>Por vencer (5 días)</MenuItem>
+            <MenuItem value='NOT_APPLICABLE'>No aplica</MenuItem>
+          </TextField>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2}>
           <TextField
             select
             fullWidth
@@ -236,7 +348,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
           </TextField>
         </Grid>
 
-        <Grid item xs={6} sm={3} md={2.5}>
+        <Grid item xs={6} sm={3} md={2}>
           <TextField
             fullWidth
             size='small'
@@ -248,7 +360,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
           />
         </Grid>
 
-        <Grid item xs={6} sm={3} md={2.5}>
+        <Grid item xs={6} sm={3} md={2}>
           <TextField
             fullWidth
             size='small'

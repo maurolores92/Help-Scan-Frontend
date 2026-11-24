@@ -12,6 +12,17 @@ export type DocumentStatus =
   | 'PROCESSED'
   | 'ERROR'
 
+export type DocumentPaymentStatus = 'PENDING' | 'SCHEDULED' | 'PAID' | 'NOT_APPLICABLE'
+export type DocumentDueFilter = 'OVERDUE' | 'DUE_SOON'
+export type DocumentExportFormat = 'xlsx' | 'csv' | 'pdf' | 'zip'
+
+export interface DocumentValidationWarning {
+  code: 'DUPLICATE_FISCAL' | 'AMOUNT_MISMATCH' | 'INVALID_CUIT'
+  severity: 'warning' | 'error'
+  message: string
+  relatedDocumentId?: number | null
+}
+
 export interface DocumentInvolvedParty {
   role: string
   name: string
@@ -99,6 +110,12 @@ export interface DocumentItem {
   errorMessage?: string | null
   ftpDeviceId?: number | null
   ftpDeviceName?: string | null
+  paymentStatus?: DocumentPaymentStatus
+  paidAt?: string | null
+  paymentReference?: string | null
+  dueAlertSentAt?: string | null
+  duplicateOfDocumentId?: number | null
+  validationWarnings?: DocumentValidationWarning[] | null
   createdAt: string
   updatedAt: string
 }
@@ -152,6 +169,9 @@ export interface ValidateDocumentPayload {
   items?: DocumentArticleItem[]
   extractedData?: Record<string, any>
   validationNotes?: string
+  paymentStatus?: DocumentPaymentStatus
+  paidAt?: string
+  paymentReference?: string
 }
 
 export interface RejectDocumentPayload {
@@ -159,10 +179,19 @@ export interface RejectDocumentPayload {
   reason: string
 }
 
+export interface UpdatePaymentStatusPayload {
+  id: number
+  paymentStatus: DocumentPaymentStatus
+  paidAt?: string | null
+  paymentReference?: string | null
+}
+
 export interface FetchDocumentParams {
   page?: number
   limit?: number
   status?: string
+  paymentStatus?: string
+  dueFilter?: string
   source?: string
   search?: string
   documentType?: string
@@ -173,6 +202,11 @@ export interface FetchDocumentParams {
   dateFrom?: string
   dateTo?: string
   filterCompanyId?: number
+}
+
+export interface ExportDocumentsParams extends FetchDocumentParams {
+  format: DocumentExportFormat
+  ids?: number[]
 }
 
 interface Redux {
@@ -287,6 +321,31 @@ export const rejectDocument = createAsyncThunk(
     return response
   }
 )
+
+export const updateDocumentPaymentStatus = createAsyncThunk(
+  'documents/updatePaymentStatus',
+  async ({ id, paymentStatus, paidAt, paymentReference }: UpdatePaymentStatusPayload) => {
+    const response: any = await apiConnector.patch(`/documents/${id}/payment-status`, {
+      paymentStatus,
+      paidAt: paidAt || null,
+      paymentReference: paymentReference || null
+    })
+
+    return response
+  }
+)
+
+export const exportFilteredDocuments = async ({ format, ids, ...filters }: ExportDocumentsParams) => {
+  const cleanParams: Record<string, any> = Object.fromEntries(
+    Object.entries(filters).filter(([, v]) => v !== '' && v !== undefined && v !== null)
+  )
+  cleanParams.format = format
+  if (ids && ids.length > 0) {
+    cleanParams.ids = ids.join(',')
+  }
+  const stamp = new Date().toISOString().slice(0, 10)
+  await apiConnector.downloadFile('/documents/export', `comprobantes_${stamp}.${format}`, cleanParams)
+}
 
 export const appDocumentsSlice = createSlice({
   name: 'documents',
@@ -420,6 +479,15 @@ export const appDocumentsSlice = createSlice({
       .addCase(rejectDocument.rejected, (state, action) => {
         state.validating = false
         state.error = action.error.message || 'Error al rechazar documento'
+      })
+      .addCase(updateDocumentPaymentStatus.fulfilled, (state, action: any) => {
+        const updatedDoc = action.payload?.document
+        if (updatedDoc) {
+          state.data = state.data.map(d => (d.id === updatedDoc.id ? updatedDoc : d))
+          if (state.selectedDocument?.id === updatedDoc.id) {
+            state.selectedDocument = updatedDoc
+          }
+        }
       })
   }
 })
