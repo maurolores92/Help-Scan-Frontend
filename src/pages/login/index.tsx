@@ -120,7 +120,6 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [sessionConflictOpen, setSessionConflictOpen] = useState<boolean>(false)
-  const [sessionConflictMsg, setSessionConflictMsg] = useState<string>('')
   const [pendingCredentials, setPendingCredentials] = useState<FormData | null>(null)
   const [takingOverSession, setTakingOverSession] = useState<boolean>(false)
 
@@ -150,12 +149,8 @@ const LoginPage = () => {
       const status = err?.response?.status
       const errData = err?.response?.data
 
-      if (status === 409 && errData?.code === 'ACTIVE_SESSION_EXISTS') {
+      if (status === 409 && (!errData?.code || errData?.code === 'ACTIVE_SESSION_EXISTS')) {
         setPendingCredentials({ username, password })
-        setSessionConflictMsg(
-          errData?.message ||
-            'Ya existe una sesión activa con esta cuenta en otro dispositivo o navegador. ¿Querés cerrarla e iniciar sesión aquí?'
-        )
         setSessionConflictOpen(true)
 
         return
@@ -522,12 +517,11 @@ const LoginPage = () => {
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 700 }}>
           <Icon icon='tabler:alert-triangle' fontSize={24} color={theme.palette.warning.main} />
-          Sesión activa en otro dispositivo
+          Ya existe una sesión iniciada
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {sessionConflictMsg ||
-              'Ya existe una sesión activa con esta cuenta en otro dispositivo o navegador. Si continuás, se cerrará la sesión anterior.'}
+            ¿Seguro que quieres iniciar sesión en este dispositivo? Al confirmar se cerrará la sesión anterior de esta cuenta.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
@@ -548,11 +542,11 @@ const LoginPage = () => {
               takingOverSession ? (
                 <CircularProgress size={18} color='inherit' />
               ) : (
-                <Icon icon='tabler:logout-2' />
+                <Icon icon='tabler:check' />
               )
             }
           >
-            {takingOverSession ? 'Cerrando sesión anterior...' : 'Cerrar sesión anterior e ingresar'}
+            {takingOverSession ? 'Iniciando sesión...' : 'Confirmar e iniciar sesión'}
           </Button>
         </DialogActions>
       </Dialog>
