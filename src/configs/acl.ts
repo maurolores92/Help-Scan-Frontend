@@ -23,6 +23,8 @@ const PLATFORM_ONLY_SUBJECTS = ['companies', 'plans', 'permissions', 'notificati
  */
 const TENANT_ONLY_SUBJECTS = [
   'documents',
+  'clients',
+  'channels_section',
   'ftp_devices',
   'channels',
   'email_inbox',
@@ -88,6 +90,7 @@ const defineRulesFor = (
   if (role === 'admin' || role === 'company_admin') {
     can('manage', 'all')
     can('read', 'admin_section')
+    can('read', 'channels_section')
     restrictSubjects(cannot, PLATFORM_ONLY_SUBJECTS)
   }
 
@@ -126,27 +129,48 @@ const defineRulesFor = (
     if (permission === 'VIEW_DOCUMENTS' || permission === 'READ_DOCUMENTS') {
       can('read', 'documents')
     }
+    if (permission === 'VIEW_CLIENTS') {
+      can('read', 'clients')
+    }
+    if (permission === 'CREATE_CLIENT') {
+      can('create', 'clients')
+    }
+    if (permission === 'UPDATE_CLIENT') {
+      can('update', 'clients')
+    }
+    if (permission === 'DELETE_CLIENT') {
+      can('delete', 'clients')
+    }
     if (permission === 'QUERY_AI_DOCUMENTS') {
       can('read', 'ai_queries')
     }
     if (permission === 'VIEW_CHANNELS') {
       can('read', 'channels')
+      can('read', 'channels_section')
     }
     if (permission === 'MANAGE_CHANNELS') {
       can('manage', 'channels')
       can('read', 'channels')
+      can('read', 'channels_section')
+    }
+    if (permission === 'VIEW_FTP_DEVICES') {
+      can('read', 'ftp_devices')
+      can('read', 'channels_section')
     }
     if (permission === 'VIEW_EMAIL_INBOX') {
       can('read', 'email_inbox')
       can('manage', 'email_inbox')
+      can('read', 'channels_section')
     }
     if (permission === 'VIEW_WHATSAPP_INBOX') {
       can('read', 'whatsapp_inbox')
       can('manage', 'whatsapp_inbox')
+      can('read', 'channels_section')
     }
     if (permission === 'VIEW_TELEGRAM_INBOX') {
       can('read', 'telegram_inbox')
       can('manage', 'telegram_inbox')
+      can('read', 'channels_section')
     }
   })
 
@@ -155,7 +179,7 @@ const defineRulesFor = (
     const hasMod = (modId: string) => enabledModules.includes(modId)
 
     if (!hasMod('documents')) {
-      restrictSubjects(cannot, ['documents'])
+      restrictSubjects(cannot, ['documents', 'clients'])
     }
     if (!hasMod('sftp')) {
       restrictSubjects(cannot, ['ftp_devices'])
@@ -171,6 +195,9 @@ const defineRulesFor = (
     }
     if (!hasMod('email') && !hasMod('whatsapp') && !hasMod('telegram')) {
       restrictSubjects(cannot, ['channels'])
+      if (!hasMod('sftp')) {
+        restrictSubjects(cannot, ['channels_section'])
+      }
     }
   }
 

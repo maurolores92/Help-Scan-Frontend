@@ -18,6 +18,49 @@ const navigation = (): HorizontalNavItemsType => {
       subject: 'documents'
     },
     {
+      title: 'Clientes',
+      icon: 'tabler:address-book',
+      path: '/clients',
+      action: 'read',
+      subject: 'clients'
+    },
+    {
+      title: 'Canales de Ingreso',
+      icon: 'tabler:plug-connected',
+      action: 'read',
+      subject: 'channels_section',
+      children: [
+        {
+          title: 'Impresoras HP y FTP',
+          icon: 'tabler:printer',
+          path: '/printers-ftp',
+          action: 'read',
+          subject: 'ftp_devices'
+        },
+        {
+          title: 'Correos Recibidos',
+          icon: 'tabler:mail-opened',
+          path: '/emails',
+          action: 'read',
+          subject: 'email_inbox'
+        },
+        {
+          title: 'Mensajes WhatsApp',
+          icon: 'tabler:brand-whatsapp',
+          path: '/whatsapp',
+          action: 'read',
+          subject: 'whatsapp_inbox'
+        },
+        {
+          title: 'Mensajes Telegram',
+          icon: 'tabler:brand-telegram',
+          path: '/telegram',
+          action: 'read',
+          subject: 'telegram_inbox'
+        }
+      ]
+    },
+    {
       title: 'Plataforma',
       icon: 'tabler:building-community',
       action: 'manage',

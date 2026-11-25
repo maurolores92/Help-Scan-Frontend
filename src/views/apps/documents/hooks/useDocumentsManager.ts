@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useRouter } from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
 import { AppDispatch, RootState } from 'src/store'
@@ -23,6 +24,7 @@ import {
 import { fetchMyCompanyQuota } from 'src/store/apps/plans'
 
 export const useDocumentsManager = () => {
+  const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
   const {
     data,
@@ -50,6 +52,11 @@ export const useDocumentsManager = () => {
   const [status, setStatus] = useState('')
   const [paymentFilter, setPaymentFilter] = useState('')
   const [source, setSource] = useState('')
+  const [clientIdFilter, setClientIdFilter] = useState<number | undefined>(() => {
+    const raw = Number(router.query.clientId)
+
+    return Number.isInteger(raw) && raw > 0 ? raw : undefined
+  })
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(10)
   const [showUpload, setShowUpload] = useState(false)
@@ -65,6 +72,17 @@ export const useDocumentsManager = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false)
   const lastHandledNotifId = useRef<number | null>(latestNotification?.id ?? null)
+
+  useEffect(() => {
+    const raw = Number(router.query.clientId)
+    const nextClientId = Number.isInteger(raw) && raw > 0 ? raw : undefined
+    setClientIdFilter(prev => {
+      if (prev === nextClientId) return prev
+      setPage(0)
+
+      return nextClientId
+    })
+  }, [router.query.clientId])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -93,7 +111,8 @@ export const useDocumentsManager = () => {
         status,
         paymentStatus: resolvedPaymentParams.paymentStatus,
         dueFilter: resolvedPaymentParams.dueFilter,
-        source
+        source,
+        clientId: clientIdFilter
       })
     )
     dispatch(fetchDocumentFacets(undefined))
@@ -110,7 +129,8 @@ export const useDocumentsManager = () => {
     status,
     resolvedPaymentParams.paymentStatus,
     resolvedPaymentParams.dueFilter,
-    source
+    source,
+    clientIdFilter
   ])
 
   useEffect(() => {
@@ -124,17 +144,64 @@ export const useDocumentsManager = () => {
 
     if (latestNotification.type?.startsWith('document.')) {
       loadData()
-    }
-  }, [latestNotification, loadData])
 
-  // Sincronizar datos del modal si el documento abierto termina de procesarse
-  useEffect(() => {
-    if (!previewDoc) return
-    const updatedInList = data.find(item => item.id === previewDoc.id)
-    if (updatedInList && updatedInList.status !== previewDoc.status) {
-      setPreviewDoc(prev => (prev ? { ...prev, ...updatedInList } : null))
+      const notifDocId = Number(latestNotification.data?.documentId || 0)
+      const targetId =
+        validatingDoc?.id && (!notifDocId || notifDocId === validatingDoc.id)
+          ? validatingDoc.id
+          : previewDoc?.id && (!notifDocId || notifDocId === previewDoc.id)
+            ? previewDoc.id
+            : 0
+
+      if (targetId > 0) {
+        dispatch(fetchDocumentById(targetId))
+          .unwrap()
+          .then(refreshed => {
+            if (!refreshed) return
+            if (validatingDoc?.id === targetId) setValidatingDoc(refreshed)
+            if (previewDoc?.id === targetId) setPreviewDoc(refreshed)
+          })
+          .catch(() => null)
+      }
     }
-  }, [data, previewDoc])
+  }, [latestNotification, loadData, dispatch, validatingDoc?.id, previewDoc?.id])
+
+  // Sincronizar datos de los modales si el documento abierto se actualiza en el listado
+  useEffect(() => {
+    if (previewDoc) {
+      const updatedPreview = data.find(item => item.id === previewDoc.id)
+      if (
+        updatedPreview &&
+        (updatedPreview.status !== previewDoc.status ||
+          updatedPreview.processedAt !== previewDoc.processedAt ||
+          updatedPreview.updatedAt !== previewDoc.updatedAt)
+      ) {
+        setPreviewDoc(prev => (prev ? { ...prev, ...updatedPreview } : null))
+      }
+    }
+
+    if (validatingDoc) {
+      const updatedValidating = data.find(item => item.id === validatingDoc.id)
+      if (
+        updatedValidating &&
+        (updatedValidating.status !== validatingDoc.status ||
+          updatedValidating.processedAt !== validatingDoc.processedAt ||
+          updatedValidating.updatedAt !== validatingDoc.updatedAt)
+      ) {
+        setValidatingDoc(prev => (prev ? { ...prev, ...updatedValidating } : null))
+      }
+    }
+  }, [data, previewDoc, validatingDoc])
+
+  const clearClientFilter = useCallback(() => {
+    setClientIdFilter(undefined)
+    setPage(0)
+    if (router.query.clientId) {
+      const nextQuery = { ...router.query }
+      delete nextQuery.clientId
+      router.replace({ pathname: router.pathname, query: nextQuery }, undefined, { shallow: true })
+    }
+  }, [router])
 
   const handleResetFilters = () => {
     setSearchInput('')
@@ -146,6 +213,7 @@ export const useDocumentsManager = () => {
     setStatus('')
     setPaymentFilter('')
     setSource('')
+    clearClientFilter()
     setPage(0)
     setSelectedRowIds([])
   }
@@ -182,6 +250,7 @@ export const useDocumentsManager = () => {
         paymentStatus: resolvedPaymentParams.paymentStatus,
         dueFilter: resolvedPaymentParams.dueFilter,
         source,
+        clientId: clientIdFilter,
         ids: selectedRowIds.length > 0 ? selectedRowIds : undefined
       })
       toast.success(`Exportación ${format.toUpperCase()} generada correctamente`)
@@ -334,7 +403,7 @@ export const useDocumentsManager = () => {
   }
 
   const hasActiveFilters = Boolean(
-    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source || paymentFilter
+    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source || paymentFilter || clientIdFilter
   )
 
   return {
@@ -365,6 +434,8 @@ export const useDocumentsManager = () => {
     setPaymentFilter,
     source,
     setSource,
+    clientIdFilter,
+    clearClientFilter,
     page,
     setPage,
     pageSize,

@@ -30,6 +30,22 @@ const navigation = (): VerticalNavItemsType => {
       subject: 'documents'
     },
     {
+      title: 'Clientes',
+      icon: 'tabler:address-book',
+      path: '/clients',
+      action: 'read',
+      subject: 'clients'
+    },
+
+    // ==========================================
+    // 3. CANALES DE INGRESO (EXCLUSIVO COMPAÑÍAS)
+    // ==========================================
+    {
+      sectionTitle: 'CANALES DE INGRESO',
+      action: 'read',
+      subject: 'channels_section'
+    },
+    {
       title: 'Impresoras HP y FTP',
       icon: 'tabler:printer',
       path: '/printers-ftp',

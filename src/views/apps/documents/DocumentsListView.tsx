@@ -43,6 +43,8 @@ export const DocumentsListView = () => {
     setPaymentFilter,
     source,
     setSource,
+    clientIdFilter,
+    clearClientFilter,
     page,
     setPage,
     pageSize,
@@ -151,6 +153,18 @@ export const DocumentsListView = () => {
           exportingFormat={exportingFormat}
           selectedCount={selectedRowIds.length}
         />
+
+        {clientIdFilter && (
+          <Box sx={{ px: 4, pb: 2, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+            <Chip
+              color='primary'
+              variant='outlined'
+              icon={<Icon icon='tabler:user-check' />}
+              label={`Mostrando documentos del cliente #${clientIdFilter}`}
+              onDelete={clearClientFilter}
+            />
+          </Box>
+        )}
 
         {/* Barra de acción cuando hay documentos seleccionados */}
         {selectedRowIds.length > 0 && (

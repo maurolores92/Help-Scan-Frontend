@@ -9,6 +9,7 @@ import Autocomplete from 'src/layouts/components/Autocomplete'
 import ModeToggler from 'src/@core/layouts/components/shared-components/ModeToggler'
 import UserDropdown from 'src/@core/layouts/components/shared-components/UserDropdown'
 import NotificationBell from 'src/components/notifications/NotificationBell'
+import DocumentQueueIndicator from 'src/components/documents/DocumentQueueIndicator'
 
 // ** Hook Import
 import { useAuth } from 'src/hooks/useAuth'
@@ -29,6 +30,7 @@ const AppBarContent = (props: Props) => {
       <ModeToggler settings={settings} saveSettings={saveSettings} />
       {auth.user && (
         <>
+          <DocumentQueueIndicator />
           <NotificationBell />
           <UserDropdown settings={settings} />
         </>

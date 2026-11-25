@@ -10,6 +10,7 @@ import documents from 'src/store/apps/documents'
 import ftpDevices from 'src/store/apps/ftpDevices'
 import plans from 'src/store/apps/plans'
 import channels from 'src/store/apps/channels'
+import clients from 'src/store/apps/clients'
 import demoRequests from 'src/store/apps/demoRequests'
 
 export const store = configureStore({
@@ -22,6 +23,7 @@ export const store = configureStore({
     ftpDevices,
     plans,
     channels,
+    clients,
     demoRequests
   },
   middleware: getDefaultMiddleware =>

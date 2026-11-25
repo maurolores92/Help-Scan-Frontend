@@ -1,5 +1,5 @@
 // ** React Imports
-import { createContext, useContext, useEffect, useRef, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react'
 
 // ** Socket.io
 import { io, Socket } from 'socket.io-client'
@@ -47,6 +47,8 @@ interface Props {
 
 export const NotificationProvider = ({ children }: Props) => {
   const socketRef = useRef<Socket | null>(null)
+  const [socketInstance, setSocketInstance] = useState<Socket | null>(null)
+  const [connected, setConnected] = useState(false)
   const { user } = useAuth()
   const dispatch = useDispatch<AppDispatch>()
 
@@ -57,6 +59,8 @@ export const NotificationProvider = ({ children }: Props) => {
         socketRef.current.disconnect()
         socketRef.current = null
       }
+      setSocketInstance(null)
+      setConnected(false)
 
       return
     }
@@ -74,6 +78,7 @@ export const NotificationProvider = ({ children }: Props) => {
 
     socket.on('connect', () => {
       console.log('[WS] Connected to /notifications')
+      setConnected(true)
       dispatch(fetchUnreadCount())
     })
 
@@ -124,17 +129,22 @@ export const NotificationProvider = ({ children }: Props) => {
 
     socket.on('disconnect', () => {
       console.log('[WS] Disconnected from /notifications')
+      setConnected(false)
     })
 
     socket.on('connect_error', (err: any) => {
       console.error('[WS] Connection error:', err.message)
+      setConnected(false)
     })
 
     socketRef.current = socket
+    setSocketInstance(socket)
 
     return () => {
       socket.disconnect()
       socketRef.current = null
+      setSocketInstance(null)
+      setConnected(false)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id])
@@ -142,8 +152,8 @@ export const NotificationProvider = ({ children }: Props) => {
   return (
     <NotificationContext.Provider
       value={{
-        socket: socketRef.current,
-        connected: socketRef.current?.connected ?? false,
+        socket: socketInstance,
+        connected,
       }}
     >
       {children}

@@ -40,6 +40,63 @@ export interface DocumentArticleItem {
   [key: string]: any
 }
 
+export type DocumentFormFieldType =
+  | 'text'
+  | 'cuit'
+  | 'number'
+  | 'currency'
+  | 'date'
+  | 'select'
+  | 'textarea'
+  | 'switch'
+  | 'items_table'
+
+export interface DocumentFormFieldSchema {
+  key: string
+  target: 'core' | 'custom'
+  label: string
+  fieldType: DocumentFormFieldType
+  colSpan?: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 12
+  required?: boolean
+  placeholder?: string
+  helperText?: string
+  options?: Array<string | { value: string; label: string }>
+  defaultValue?: string | number | boolean | null
+  aiAttrKeys?: string[]
+  uppercase?: boolean
+  prefixIcon?: string
+}
+
+export interface DocumentFormSectionSchema {
+  id: string
+  title: string
+  icon?: string
+  description?: string
+  fields: DocumentFormFieldSchema[]
+}
+
+export interface DocumentTypeFormDefinition {
+  id: number
+  companyId?: number | null
+  code: string
+  label: string
+  description?: string | null
+  icon?: string | null
+  matchAliases: string[]
+  sectionsSchema: DocumentFormSectionSchema[]
+  displayOrder: number
+  version: number
+}
+
+export interface DocumentFormRecordSummary {
+  id?: number
+  formSchemaId?: number | null
+  documentType: string
+  formData: Record<string, any>
+  schemaVersion?: number
+  validatedAt?: string | null
+}
+
 export interface DocumentExtractedData {
   attributes?: Record<string, string | number | boolean | null>
   items?: DocumentArticleItem[]
@@ -71,6 +128,19 @@ export interface DocumentItem {
   issuerTaxId?: string | null
   recipientName?: string | null
   recipientTaxId?: string | null
+  clientId?: number | null
+  client?: {
+    id: number
+    name: string
+    tradeName?: string | null
+    taxId?: string | null
+    taxIdType?: string | null
+    taxCondition?: string | null
+    email?: string | null
+    phone?: string | null
+    city?: string | null
+    province?: string | null
+  } | null
   recipientPhone?: string | null
   recipientEmail?: string | null
   deliveryAddress?: string | null
@@ -116,6 +186,7 @@ export interface DocumentItem {
   dueAlertSentAt?: string | null
   duplicateOfDocumentId?: number | null
   validationWarnings?: DocumentValidationWarning[] | null
+  formRecord?: DocumentFormRecordSummary | null
   createdAt: string
   updatedAt: string
 }
@@ -141,6 +212,7 @@ export interface ValidateDocumentPayload {
   issuerTaxId?: string
   recipientName?: string
   recipientTaxId?: string
+  clientId?: number | null
   recipientPhone?: string
   recipientEmail?: string
   deliveryAddress?: string
@@ -168,6 +240,7 @@ export interface ValidateDocumentPayload {
   tags?: string[]
   items?: DocumentArticleItem[]
   extractedData?: Record<string, any>
+  formData?: Record<string, any>
   validationNotes?: string
   paymentStatus?: DocumentPaymentStatus
   paidAt?: string
@@ -199,6 +272,7 @@ export interface FetchDocumentParams {
   department?: string
   documentLetter?: string
   recipientTaxId?: string
+  clientId?: number
   dateFrom?: string
   dateTo?: string
   filterCompanyId?: number
@@ -233,6 +307,15 @@ export const fetchDocumentFacets = createAsyncThunk(
     const response: any = await apiConnector.get('/documents/facets', params)
 
     return response
+  }
+)
+
+export const fetchDocumentForms = createAsyncThunk(
+  'documents/fetchDocumentForms',
+  async () => {
+    const response = await apiConnector.get<DocumentTypeFormDefinition[]>('/documents/forms')
+
+    return Array.isArray(response) ? response : []
   }
 )
 
@@ -354,6 +437,8 @@ export const appDocumentsSlice = createSlice({
     facets: [] as DocumentTypeFacet[],
     statusFacets: [] as DocumentTypeFacet[],
     departmentFacets: [] as DocumentTypeFacet[],
+    formSchemas: [] as DocumentTypeFormDefinition[],
+    loadingForms: false,
     total: 0,
     params: {
       page: 1,
@@ -403,6 +488,16 @@ export const appDocumentsSlice = createSlice({
         state.facets = action.payload?.documentTypes || []
         state.statusFacets = action.payload?.statuses || []
         state.departmentFacets = action.payload?.departments || []
+      })
+      .addCase(fetchDocumentForms.pending, state => {
+        state.loadingForms = true
+      })
+      .addCase(fetchDocumentForms.fulfilled, (state, action: any) => {
+        state.loadingForms = false
+        state.formSchemas = Array.isArray(action.payload) ? action.payload : []
+      })
+      .addCase(fetchDocumentForms.rejected, state => {
+        state.loadingForms = false
       })
       .addCase(fetchDocumentById.fulfilled, (state, action: any) => {
         state.selectedDocument = action.payload

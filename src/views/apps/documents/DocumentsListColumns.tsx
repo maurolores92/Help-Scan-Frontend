@@ -110,6 +110,7 @@ export const buildDocumentsColumns = (handlers: {
       minWidth: 175,
       renderCell: ({ row }: { row: DocumentItem }) => {
         const clientName =
+          row.client?.name ||
           row.recipientName ||
           (row.extractedData?.attributes?.cliente as string) ||
           (row.extractedData?.attributes?.razon_social as string) ||
@@ -122,21 +123,44 @@ export const buildDocumentsColumns = (handlers: {
           (row.extractedData?.attributes?.localidad as string) ||
           ''
 
-        const taxId = row.recipientTaxId || (row.extractedData?.attributes?.cuit_cliente as string) || ''
+        const taxId =
+          row.client?.taxId ||
+          row.recipientTaxId ||
+          (row.extractedData?.attributes?.cuit_cliente as string) ||
+          ''
         const subInfo = [address, taxId ? `CUIT: ${taxId}` : ''].filter(Boolean).join(' · ')
 
         return (
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography
-              variant='body2'
-              noWrap
-              sx={{
-                fontWeight: clientName !== '—' ? 600 : 400,
-                color: clientName !== '—' ? 'text.primary' : 'text.disabled'
-              }}
-            >
-              {clientName}
-            </Typography>
+          <Box sx={{ overflow: 'hidden', width: '100%' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0 }}>
+              <Typography
+                variant='body2'
+                noWrap
+                sx={{
+                  fontWeight: clientName !== '—' ? 600 : 400,
+                  color: clientName !== '—' ? 'text.primary' : 'text.disabled'
+                }}
+              >
+                {clientName}
+              </Typography>
+              {row.client && (
+                <Tooltip
+                  title={
+                    row.client.taxId
+                      ? `Vinculado al cliente #${row.client.id} (${row.client.taxId})`
+                      : `Vinculado al cliente #${row.client.id} (CUIT/CUIL pendiente)`
+                  }
+                >
+                  <Chip
+                    label='Vinculado'
+                    size='small'
+                    color='primary'
+                    variant='outlined'
+                    sx={{ height: 18, fontSize: '0.65rem', fontWeight: 600 }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
             {subInfo ? (
               <Tooltip title={subInfo}>
                 <Typography variant='caption' noWrap sx={{ display: 'block', color: 'text.secondary' }}>
