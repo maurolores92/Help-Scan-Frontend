@@ -18,6 +18,11 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import CircularProgress from '@mui/material/CircularProgress'
 import Stack from '@mui/material/Stack'
 import Paper from '@mui/material/Paper'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogContentText from '@mui/material/DialogContentText'
+import DialogActions from '@mui/material/DialogActions'
 
 // ** Custom Component Import
 import CustomTextField from 'src/@core/components/mui/text-field'
@@ -114,6 +119,10 @@ const LoginPage = () => {
   const [rememberMe, setRememberMe] = useState<boolean>(true)
   const [showPassword, setShowPassword] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
+  const [sessionConflictOpen, setSessionConflictOpen] = useState<boolean>(false)
+  const [sessionConflictMsg, setSessionConflictMsg] = useState<string>('')
+  const [pendingCredentials, setPendingCredentials] = useState<FormData | null>(null)
+  const [takingOverSession, setTakingOverSession] = useState<boolean>(false)
 
   // ** Hooks
   const auth = useAuth()
@@ -138,13 +147,54 @@ const LoginPage = () => {
 
     auth.login({ username, password, rememberMe }, (err: any) => {
       setLoading(false)
-      const errorMsg = err?.response?.data?.message || 'Usuario o contraseña inválida'
+      const status = err?.response?.status
+      const errData = err?.response?.data
+
+      if (status === 409 && errData?.code === 'ACTIVE_SESSION_EXISTS') {
+        setPendingCredentials({ username, password })
+        setSessionConflictMsg(
+          errData?.message ||
+            'Ya existe una sesión activa con esta cuenta en otro dispositivo o navegador. ¿Querés cerrarla e iniciar sesión aquí?'
+        )
+        setSessionConflictOpen(true)
+
+        return
+      }
+
+      const errorMsg = errData?.message || 'Usuario o contraseña inválida'
       toast.error(errorMsg, { position: 'top-right' })
       setError('username', {
         type: 'manual',
         message: errorMsg
       })
     })
+  }
+
+  const handleConfirmTakeover = () => {
+    if (!pendingCredentials) return
+    setTakingOverSession(true)
+
+    auth.login(
+      {
+        username: pendingCredentials.username,
+        password: pendingCredentials.password,
+        rememberMe,
+        forceTakeover: true
+      },
+      (err: any) => {
+        setTakingOverSession(false)
+        setSessionConflictOpen(false)
+        setPendingCredentials(null)
+        const errorMsg = err?.response?.data?.message || 'No se pudo iniciar sesión'
+        toast.error(errorMsg, { position: 'top-right' })
+      }
+    )
+  }
+
+  const handleCancelTakeover = () => {
+    if (takingOverSession) return
+    setSessionConflictOpen(false)
+    setPendingCredentials(null)
   }
 
   return (
@@ -463,6 +513,49 @@ const LoginPage = () => {
           </FormWrapper>
         </Box>
       </Box>
+
+      <Dialog
+        open={sessionConflictOpen}
+        onClose={handleCancelTakeover}
+        maxWidth='xs'
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, fontWeight: 700 }}>
+          <Icon icon='tabler:alert-triangle' fontSize={24} color={theme.palette.warning.main} />
+          Sesión activa en otro dispositivo
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {sessionConflictMsg ||
+              'Ya existe una sesión activa con esta cuenta en otro dispositivo o navegador. Si continuás, se cerrará la sesión anterior.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
+          <Button
+            variant='outlined'
+            color='secondary'
+            onClick={handleCancelTakeover}
+            disabled={takingOverSession}
+          >
+            Cancelar
+          </Button>
+          <Button
+            variant='contained'
+            color='warning'
+            onClick={handleConfirmTakeover}
+            disabled={takingOverSession}
+            startIcon={
+              takingOverSession ? (
+                <CircularProgress size={18} color='inherit' />
+              ) : (
+                <Icon icon='tabler:logout-2' />
+              )
+            }
+          >
+            {takingOverSession ? 'Cerrando sesión anterior...' : 'Cerrar sesión anterior e ingresar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   )
 }

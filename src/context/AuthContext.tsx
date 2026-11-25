@@ -73,7 +73,11 @@ const AuthProvider = ({ children }: Props) => {
   }, [])
 
   const handleLogin = (params: LoginParams, errorCallback?: ErrCallbackType) => {
-    authService.login({ username: params.username, password: params.password })
+    authService.login({
+      username: params.username,
+      password: params.password,
+      forceTakeover: params.forceTakeover
+    })
       .then(async response => {
         if (!params.rememberMe) {
           // Si no recuerda, podríamos borrar del local storage y manejar sesión
@@ -93,9 +97,9 @@ const AuthProvider = ({ children }: Props) => {
       })
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authService.logout()
     setUser(null)
-    authService.logout()
     router.push('/login')
   }
 

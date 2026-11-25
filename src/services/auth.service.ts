@@ -3,6 +3,7 @@ import apiConnector from "./api.service";
 export interface LoginRequest {
   username?: string;
   password?: string;
+  forceTakeover?: boolean;
 }
 
 const authService = {
@@ -37,6 +38,13 @@ return response;
       return response;
   },
   logout: async () => {
+    try {
+      if (typeof window !== 'undefined' && localStorage.getItem('accessToken')) {
+        await apiConnector.post('/auth/logout', {});
+      }
+    } catch {
+      // Continuar limpiando la sesión local incluso si el token ya estaba expirado o revocado
+    }
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('userData');

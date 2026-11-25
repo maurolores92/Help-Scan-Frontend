@@ -4,6 +4,7 @@ export type LoginParams = {
   username: string
   password: string
   rememberMe?: boolean
+  forceTakeover?: boolean
 }
 
 export type UserCompanyInfoType = {
