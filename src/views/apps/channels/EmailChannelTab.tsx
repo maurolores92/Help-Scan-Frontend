@@ -29,8 +29,9 @@ import {
   syncEmailChannelNow,
   testEmailChannelConnection
 } from 'src/store/apps/channels'
-import { EmailProviderType } from 'src/types/apps/channelTypes'
+import { EmailProviderType, EmailSenderPolicy } from 'src/types/apps/channelTypes'
 import { getApiBaseUrl } from 'src/utils/api-url'
+import EmailSendersWhitelistBox from './EmailSendersWhitelistBox'
 
 const PROVIDER_PRESETS: Record<
   EmailProviderType,
@@ -82,6 +83,8 @@ const EmailChannelTab: React.FC = () => {
   const [processBodyWithoutAttachments, setProcessBodyWithoutAttachments] = useState(true)
   const [markAsRead, setMarkAsRead] = useState(true)
   const [syncIntervalMinutes, setSyncIntervalMinutes] = useState<number>(5)
+  const [senderPolicy, setSenderPolicy] = useState<EmailSenderPolicy>('ALL')
+  const [allowedSenders, setAllowedSenders] = useState<string[]>([])
   const [testFeedback, setTestFeedback] = useState<{
     severity: 'success' | 'error'
     text: string
@@ -103,6 +106,8 @@ const EmailChannelTab: React.FC = () => {
       setProcessBodyWithoutAttachments(emailChannel.processBodyWithoutAttachments)
       setMarkAsRead(emailChannel.markAsRead)
       setSyncIntervalMinutes(emailChannel.syncIntervalMinutes || 5)
+      setSenderPolicy(emailChannel.senderPolicy || 'ALL')
+      setAllowedSenders(Array.isArray(emailChannel.allowedSenders) ? emailChannel.allowedSenders : [])
     }
   }, [emailChannel])
 
@@ -182,6 +187,12 @@ const EmailChannelTab: React.FC = () => {
     e.preventDefault()
     setTestFeedback(null)
 
+    if (senderPolicy === 'WHITELIST' && allowedSenders.length === 0) {
+      toast.error('Agregá al menos un correo o dominio autorizado para activar la lista blanca')
+
+      return
+    }
+
     try {
       await dispatch(
         saveEmailChannelConfig({
@@ -195,7 +206,9 @@ const EmailChannelTab: React.FC = () => {
           isActive,
           processBodyWithoutAttachments,
           markAsRead,
-          syncIntervalMinutes: Number(syncIntervalMinutes) || 5
+          syncIntervalMinutes: Number(syncIntervalMinutes) || 5,
+          senderPolicy,
+          allowedSenders
         })
       ).unwrap()
 
@@ -438,6 +451,34 @@ const EmailChannelTab: React.FC = () => {
                     <MenuItem value={30}>Cada 30 minutos</MenuItem>
                   </TextField>
                 </Grid>
+
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label='¿Qué remitentes procesar?'
+                    value={senderPolicy}
+                    onChange={e => setSenderPolicy(e.target.value as EmailSenderPolicy)}
+                  >
+                    <MenuItem value='ALL'>Todos los correos entrantes</MenuItem>
+                    <MenuItem value='WHITELIST'>
+                      Solo correos y dominios autorizados (Lista Blanca)
+                    </MenuItem>
+                  </TextField>
+                </Grid>
+
+                {senderPolicy === 'WHITELIST' && (
+                  <Grid item xs={12}>
+                    <EmailSendersWhitelistBox
+                      allowedSenders={allowedSenders}
+                      onChange={setAllowedSenders}
+                    />
+                  </Grid>
+                )}
 
                 <Grid item xs={12}>
                   <Divider sx={{ my: 1 }} />

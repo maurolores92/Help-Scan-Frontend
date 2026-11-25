@@ -140,6 +140,7 @@ export const DocumentLinksPanel: React.FC<DocumentLinksPanelProps> = ({
   }
 
   const balance = data?.balanceSummary
+  const sourceImputation = data?.sourceImputationSummary
   const links = data?.links || []
   const suggestions = data?.suggestions || []
   const alreadyLinkedIds = links.map(l => l.relatedDocument?.id).filter(Boolean) as number[]
@@ -177,7 +178,7 @@ export const DocumentLinksPanel: React.FC<DocumentLinksPanelProps> = ({
             <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>
               Resumen de Saldo del Comprobante
             </Typography>
-            <StatusChip status={balance.derivedPaymentStatus} />
+            <StatusChip variantType='payment' status={balance.derivedPaymentStatus} />
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: 1.5 }}>
             <Box>
@@ -215,6 +216,40 @@ export const DocumentLinksPanel: React.FC<DocumentLinksPanelProps> = ({
               Imputación excedida en {fmtMoney(balance.overpaidAmount, doc.currency)} sobre el total neto del comprobante.
             </Alert>
           )}
+        </Paper>
+      )}
+
+      {sourceImputation?.isPaymentSource && (
+        <Paper variant='outlined' sx={{ p: 2, bgcolor: 'action.hover' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5, flexWrap: 'wrap', gap: 1 }}>
+            <Typography variant='subtitle2' sx={{ fontWeight: 700 }}>
+              Saldo de Imputación del Pago / Ajuste
+            </Typography>
+            <Chip
+              size='small'
+              color={sourceImputation.unappliedAmount > 1 ? 'warning' : 'success'}
+              label={sourceImputation.unappliedAmount > 1 ? 'Con saldo sin imputar' : 'Totalmente imputado'}
+            />
+          </Box>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
+            <Box>
+              <Typography variant='caption' color='text.secondary'>Total Comprobante</Typography>
+              <Typography variant='body2' sx={{ fontWeight: 600 }}>{fmtMoney(sourceImputation.totalAmount, doc.currency)}</Typography>
+            </Box>
+            <Box>
+              <Typography variant='caption' color='text.secondary'>Ya Imputado</Typography>
+              <Typography variant='body2' color='success.main' sx={{ fontWeight: 600 }}>{fmtMoney(sourceImputation.imputedAmount, doc.currency)}</Typography>
+            </Box>
+            <Box>
+              <Typography variant='caption' color='text.secondary'>Falta Imputar</Typography>
+              <Typography
+                variant='body2'
+                sx={{ fontWeight: 700, color: sourceImputation.unappliedAmount > 1 ? 'warning.main' : 'success.main' }}
+              >
+                {fmtMoney(sourceImputation.unappliedAmount, doc.currency)}
+              </Typography>
+            </Box>
+          </Box>
         </Paper>
       )}
 
@@ -372,6 +407,7 @@ export const DocumentLinksPanel: React.FC<DocumentLinksPanelProps> = ({
         sourceDocument={doc}
         clientId={doc.clientId}
         alreadyLinkedIds={alreadyLinkedIds}
+        sourceImputationSummary={sourceImputation}
         onClose={() => setManualOpen(false)}
         onLinked={() => {
           loadLinks()

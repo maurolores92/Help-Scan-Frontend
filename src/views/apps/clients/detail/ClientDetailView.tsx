@@ -28,6 +28,7 @@ import DocumentValidationModal from 'src/components/documents/DocumentValidation
 import ManualDocumentLinkDialog from 'src/components/documents/ManualDocumentLinkDialog'
 import ClientFormDialog from '../ClientFormDialog'
 import ClientDetailHeaderCard from './ClientDetailHeaderCard'
+import ClientAccountStatementCard from './ClientAccountStatementCard'
 import ClientDetailDocumentsPanel from './ClientDetailDocumentsPanel'
 
 export const ClientDetailView = ({ clientId }: { clientId: number }) => {
@@ -47,6 +48,8 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
 
   const [activeType, setActiveType] = useState('all')
   const [roleFilter, setRoleFilter] = useState<'all' | 'issuer' | 'recipient' | 'linked'>('all')
+  const [paymentFilter, setPaymentFilter] = useState('all')
+  const [linkStateFilter, setLinkStateFilter] = useState<'all' | 'linked' | 'unlinked'>('all')
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [page, setPage] = useState(0)
@@ -82,12 +85,14 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         id: clientId,
         documentType: activeType,
         role: roleFilter,
+        paymentStatus: paymentFilter === 'all' ? undefined : paymentFilter,
+        linkState: linkStateFilter === 'all' ? undefined : linkStateFilter,
         search: debouncedSearch,
         page: page + 1,
         limit: pageSize
       })
     )
-  }, [dispatch, clientId, activeType, roleFilter, debouncedSearch, page, pageSize])
+  }, [dispatch, clientId, activeType, roleFilter, paymentFilter, linkStateFilter, debouncedSearch, page, pageSize])
 
   useEffect(() => {
     loadClientDetail()
@@ -196,6 +201,28 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         onSync={handleSync}
       />
 
+      <ClientAccountStatementCard
+        statement={clientDocumentsSummary?.accountStatement}
+        onFilterPendingInvoices={() => {
+          setActiveType('factura')
+          setPaymentFilter('UNPAID_OR_PARTIAL')
+          setLinkStateFilter('all')
+          setPage(0)
+        }}
+        onFilterUnlinkedPayments={() => {
+          setActiveType('recibo')
+          setPaymentFilter('all')
+          setLinkStateFilter('all')
+          setPage(0)
+        }}
+        onFilterUnbilledRemitos={() => {
+          setActiveType('remito')
+          setPaymentFilter('all')
+          setLinkStateFilter('unlinked')
+          setPage(0)
+        }}
+      />
+
       <ClientDetailDocumentsPanel
         documents={clientDocuments}
         total={clientDocumentsTotal}
@@ -203,6 +230,8 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         loading={loadingClientDocuments}
         activeType={activeType}
         roleFilter={roleFilter}
+        paymentFilter={paymentFilter}
+        linkStateFilter={linkStateFilter}
         searchInput={searchInput}
         page={page}
         pageSize={pageSize}
@@ -212,6 +241,14 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         }}
         onRoleChange={nextRole => {
           setRoleFilter(nextRole)
+          setPage(0)
+        }}
+        onPaymentFilterChange={nextPayment => {
+          setPaymentFilter(nextPayment)
+          setPage(0)
+        }}
+        onLinkStateChange={nextLink => {
+          setLinkStateFilter(nextLink)
           setPage(0)
         }}
         onSearchChange={val => setSearchInput(val)}

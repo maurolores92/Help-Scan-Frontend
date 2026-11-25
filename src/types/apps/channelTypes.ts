@@ -1,5 +1,7 @@
 export type EmailProviderType = 'GMAIL' | 'OUTLOOK' | 'CUSTOM'
 
+export type EmailSenderPolicy = 'ALL' | 'WHITELIST'
+
 export type EmailSyncStatus = 'IDLE' | 'OK' | 'ERROR'
 
 export type EmailMessageStatus = 'PROCESSED' | 'SYNTHESIZED_BODY' | 'SKIPPED' | 'ERROR'
@@ -18,6 +20,8 @@ export interface CompanyEmailChannelItem {
   processBodyWithoutAttachments: boolean
   markAsRead: boolean
   syncIntervalMinutes: number
+  senderPolicy?: EmailSenderPolicy
+  allowedSenders?: string[]
   lastSyncAt: string | null
   lastSyncStatus: EmailSyncStatus
   lastSyncMessage: string | null
@@ -38,6 +42,8 @@ export interface UpsertEmailChannelPayload {
   processBodyWithoutAttachments: boolean
   markAsRead: boolean
   syncIntervalMinutes: number
+  senderPolicy?: EmailSenderPolicy
+  allowedSenders?: string[]
 }
 
 export interface TestEmailConnectionPayload {
@@ -92,6 +98,19 @@ export interface EmailMessagesStats {
 
 export type WhatsappSenderPolicy = 'ALL' | 'WHITELIST'
 
+export type WhatsappGroupPolicy = 'IGNORE' | 'WHITELIST' | 'ALL'
+
+export interface AllowedWhatsappGroup {
+  jid: string
+  name: string
+}
+
+export interface WhatsappGroupItem {
+  jid: string
+  name: string
+  participantsCount: number
+}
+
 export type WhatsappConnectionStatus =
   | 'DISCONNECTED'
   | 'CONNECTING'
@@ -113,6 +132,8 @@ export interface CompanyWhatsappChannelItem {
   senderPolicy: WhatsappSenderPolicy
   allowedPhones: string[]
   ignoreGroups: boolean
+  groupPolicy?: WhatsappGroupPolicy
+  allowedGroups?: AllowedWhatsappGroup[]
   isActive: boolean
   processImages: boolean
   autoReplyConfirmation: boolean
@@ -143,6 +164,8 @@ export interface UpsertWhatsappChannelPayload {
   senderPolicy: WhatsappSenderPolicy
   allowedPhones: string[]
   ignoreGroups: boolean
+  groupPolicy?: WhatsappGroupPolicy
+  allowedGroups?: AllowedWhatsappGroup[]
   isActive: boolean
   processImages: boolean
   autoReplyConfirmation: boolean
@@ -155,6 +178,8 @@ export interface WhatsappMessageItem {
   externalMessageId: string
   senderPhone: string
   senderName: string | null
+  groupJid?: string | null
+  groupName?: string | null
   messageType: string
   fileName: string | null
   mimeType: string | null

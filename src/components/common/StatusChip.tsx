@@ -15,11 +15,20 @@ export type GenericStatus =
 interface StatusChipProps extends Omit<ChipProps, 'color' | 'label'> {
   status: GenericStatus
   customLabel?: string
+  variantType?: 'default' | 'payment'
 }
 
 interface StatusConfig {
   label: string
   color: NonNullable<ChipProps['color']>
+}
+
+const PAYMENT_STATUS_CONFIGS: Record<string, StatusConfig> = {
+  PENDING: { label: 'Impago', color: 'warning' },
+  PARTIALLY_PAID: { label: 'Pagado Parcial', color: 'info' },
+  SCHEDULED: { label: 'Programado', color: 'secondary' },
+  PAID: { label: 'Pagado', color: 'success' },
+  NOT_APPLICABLE: { label: 'No Aplica', color: 'default' }
 }
 
 const STATUS_CONFIGS: Record<string, StatusConfig> = {
@@ -48,15 +57,18 @@ const STATUS_CONFIGS: Record<string, StatusConfig> = {
 export const StatusChip: React.FC<StatusChipProps> = ({
   status,
   customLabel,
+  variantType = 'default',
   size = 'small',
   sx,
   ...props
 }) => {
   const normalizedKey = (status || '').toUpperCase()
-  const config = STATUS_CONFIGS[normalizedKey] || {
-    label: customLabel || status,
-    color: 'default'
-  }
+  const config =
+    (variantType === 'payment' ? PAYMENT_STATUS_CONFIGS[normalizedKey] : undefined) ||
+    STATUS_CONFIGS[normalizedKey] || {
+      label: customLabel || status,
+      color: 'default'
+    }
 
   return (
     <Chip

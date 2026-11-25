@@ -21,6 +21,13 @@ export type DocumentPaymentStatus =
 export type DocumentDueFilter = 'OVERDUE' | 'DUE_SOON'
 export type DocumentExportFormat = 'xlsx' | 'csv' | 'pdf' | 'zip'
 
+export interface SourceImputationSummary {
+  isPaymentSource: boolean
+  totalAmount: number
+  imputedAmount: number
+  unappliedAmount: number
+}
+
 export interface DocumentBalanceSummary {
   isTrackable: boolean
   totalAmount: number
@@ -82,6 +89,7 @@ export interface DocumentLinkSuggestion {
 export interface DocumentLinksResponse {
   documentId: number
   balanceSummary: DocumentBalanceSummary
+  sourceImputationSummary?: SourceImputationSummary
   links: DocumentLinkItem[]
   suggestions: DocumentLinkSuggestion[]
 }
@@ -267,6 +275,7 @@ export interface DocumentItem {
   validationWarnings?: DocumentValidationWarning[] | null
   formRecord?: DocumentFormRecordSummary | null
   balanceSummary?: DocumentBalanceSummary
+  imputationSummary?: SourceImputationSummary
   linkedCount?: number
   createdAt: string
   updatedAt: string

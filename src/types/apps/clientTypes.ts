@@ -1,4 +1,4 @@
-import { DocumentBalanceSummary } from 'src/store/apps/documents'
+import { DocumentBalanceSummary, SourceImputationSummary } from 'src/store/apps/documents'
 
 export interface ClientLinkedDocumentSummary {
   id: number
@@ -106,8 +106,35 @@ export interface ClientDocumentItem {
   clientRole: ClientDocumentRole
   linkedCount?: number
   balanceSummary?: DocumentBalanceSummary
+  imputationSummary?: SourceImputationSummary
   createdAt: string
   updatedAt: string
+}
+
+export interface AccountStatementBreakdown {
+  invoicedNet: number
+  paidOrCredited: number
+  remainingBalance: number
+  invoicesCount: number
+  paidCount: number
+  partialCount: number
+  pendingCount: number
+}
+
+export interface ClientAccountStatement {
+  totalInvoicedNet: number
+  totalPaidOrCollected: number
+  totalRemainingBalance: number
+  totalPaymentsAmount: number
+  totalUnappliedPayments: number
+  invoicesCount: number
+  paidInvoicesCount: number
+  partialInvoicesCount: number
+  pendingInvoicesCount: number
+  unlinkedReceiptsCount: number
+  unbilledRemitosCount: number
+  receivable: AccountStatementBreakdown
+  payable: AccountStatementBreakdown
 }
 
 export interface ClientDocumentsSummary {
@@ -125,6 +152,7 @@ export interface ClientDocumentsSummary {
   }
   byType: Record<string, number>
   typeCounts: Array<{ documentType: string; count: number }>
+  accountStatement?: ClientAccountStatement
 }
 
 export interface FetchClientDocumentsParams {
@@ -132,6 +160,8 @@ export interface FetchClientDocumentsParams {
   documentType?: string
   role?: 'all' | 'issuer' | 'recipient' | 'linked'
   status?: string
+  paymentStatus?: string
+  linkState?: 'all' | 'linked' | 'unlinked'
   search?: string
   page?: number
   limit?: number

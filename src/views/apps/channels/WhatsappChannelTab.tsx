@@ -27,9 +27,17 @@ import {
   connectWhatsappQr,
   disconnectWhatsappSession,
   fetchWhatsappChannelConfig,
+  fetchWhatsappGroups,
   saveWhatsappChannelSettings
 } from 'src/store/apps/channels'
-import { WhatsappConnectionStatus, WhatsappRuntimeSnapshot, WhatsappSenderPolicy } from 'src/types/apps/channelTypes'
+import {
+  AllowedWhatsappGroup,
+  WhatsappConnectionStatus,
+  WhatsappGroupPolicy,
+  WhatsappRuntimeSnapshot,
+  WhatsappSenderPolicy
+} from 'src/types/apps/channelTypes'
+import WhatsappGroupsSelector from './WhatsappGroupsSelector'
 
 const STATUS_META: Record<
   WhatsappConnectionStatus,
@@ -48,6 +56,9 @@ const WhatsappChannelTab: React.FC = () => {
   const {
     whatsappChannel,
     whatsappRuntime,
+    whatsappGroups,
+    whatsappGroupsConnected,
+    loadingWhatsappGroups,
     loadingWhatsappConfig,
     savingWhatsappConfig,
     connectingWhatsapp,
@@ -57,7 +68,8 @@ const WhatsappChannelTab: React.FC = () => {
   const [senderPolicy, setSenderPolicy] = useState<WhatsappSenderPolicy>('ALL')
   const [allowedPhones, setAllowedPhones] = useState<string[]>([])
   const [phoneInput, setPhoneInput] = useState('')
-  const [ignoreGroups, setIgnoreGroups] = useState(true)
+  const [groupPolicy, setGroupPolicy] = useState<WhatsappGroupPolicy>('IGNORE')
+  const [allowedGroups, setAllowedGroups] = useState<AllowedWhatsappGroup[]>([])
   const [isActive, setIsActive] = useState(true)
   const [processImages, setProcessImages] = useState(true)
 
@@ -69,7 +81,10 @@ const WhatsappChannelTab: React.FC = () => {
     if (whatsappChannel) {
       setSenderPolicy(whatsappChannel.senderPolicy || 'ALL')
       setAllowedPhones(Array.isArray(whatsappChannel.allowedPhones) ? whatsappChannel.allowedPhones : [])
-      setIgnoreGroups(whatsappChannel.ignoreGroups !== false)
+      const resolvedPolicy: WhatsappGroupPolicy =
+        whatsappChannel.groupPolicy || (whatsappChannel.ignoreGroups === false ? 'ALL' : 'IGNORE')
+      setGroupPolicy(resolvedPolicy)
+      setAllowedGroups(Array.isArray(whatsappChannel.allowedGroups) ? whatsappChannel.allowedGroups : [])
       setIsActive(whatsappChannel.isActive)
       setProcessImages(whatsappChannel.processImages)
     }
@@ -98,6 +113,12 @@ const WhatsappChannelTab: React.FC = () => {
   const qrDataUrl = whatsappRuntime?.qrDataUrl || null
   const connectedPhone = whatsappRuntime?.connectedPhone || whatsappChannel?.connectedPhone || null
   const connectedName = whatsappRuntime?.connectedName || whatsappChannel?.connectedName || null
+
+  useEffect(() => {
+    if (currentStatus === 'CONNECTED' && groupPolicy === 'WHITELIST') {
+      dispatch(fetchWhatsappGroups())
+    }
+  }, [currentStatus, groupPolicy, dispatch])
 
   // Polling suave mientras espera QR o está conectando (respaldo por si el socket tarda)
   useEffect(() => {
@@ -155,7 +176,9 @@ const WhatsappChannelTab: React.FC = () => {
         saveWhatsappChannelSettings({
           senderPolicy,
           allowedPhones,
-          ignoreGroups,
+          ignoreGroups: groupPolicy === 'IGNORE',
+          groupPolicy,
+          allowedGroups,
           isActive,
           processImages,
           autoReplyConfirmation: false
@@ -485,21 +508,39 @@ const WhatsappChannelTab: React.FC = () => {
                 </Grid>
 
                 <Grid item xs={12}>
+                  <TextField
+                    select
+                    fullWidth
+                    label='Recepción desde Grupos de WhatsApp'
+                    value={groupPolicy}
+                    onChange={e => setGroupPolicy(e.target.value as WhatsappGroupPolicy)}
+                  >
+                    <MenuItem value='IGNORE'>Ignorar todos los grupos (solo chats privados)</MenuItem>
+                    <MenuItem value='WHITELIST'>Solo grupos autorizados (procesar de cualquier integrante)</MenuItem>
+                    <MenuItem value='ALL'>Permitir todos los grupos</MenuItem>
+                  </TextField>
+                </Grid>
+
+                {groupPolicy === 'WHITELIST' && (
+                  <Grid item xs={12}>
+                    <WhatsappGroupsSelector
+                      connected={currentStatus === 'CONNECTED' || whatsappGroupsConnected}
+                      loading={loadingWhatsappGroups}
+                      availableGroups={whatsappGroups}
+                      selectedGroups={allowedGroups}
+                      onRefreshGroups={() => dispatch(fetchWhatsappGroups())}
+                      onChange={setAllowedGroups}
+                    />
+                  </Grid>
+                )}
+
+                <Grid item xs={12}>
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                     <FormControlLabel
                       control={
                         <Switch checked={isActive} onChange={e => setIsActive(e.target.checked)} />
                       }
                       label='Canal activo (reconectar automáticamente al reiniciar el servidor)'
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={ignoreGroups}
-                          onChange={e => setIgnoreGroups(e.target.checked)}
-                        />
-                      }
-                      label='Ignorar mensajes de grupos de WhatsApp (recomendado)'
                     />
                     <FormControlLabel
                       control={

@@ -121,6 +121,16 @@ const WhatsappInboxView: React.FC = () => {
               +{row.senderPhone}
             </Typography>
           )}
+          {(row.groupName || row.groupJid) && (
+            <Chip
+              size='small'
+              variant='outlined'
+              color='info'
+              icon={<Icon icon='tabler:users-group' fontSize={12} />}
+              label={`Grupo: ${row.groupName || row.groupJid}`}
+              sx={{ height: 18, mt: 0.35, fontSize: '0.65rem' }}
+            />
+          )}
         </Box>
       )
     },

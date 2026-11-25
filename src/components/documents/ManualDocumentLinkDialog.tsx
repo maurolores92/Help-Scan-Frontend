@@ -19,6 +19,8 @@ import toast from 'react-hot-toast'
 import Icon from 'src/@core/components/icon'
 import apiConnector from 'src/services/api.service'
 import { documentLinksApi } from 'src/services/documentLinks.service'
+import { SourceImputationSummary } from 'src/store/apps/documents'
+import StatusChip from 'src/components/common/StatusChip'
 
 export interface LinkableDocumentCandidate {
   id: number
@@ -34,9 +36,11 @@ export interface LinkableDocumentCandidate {
   currency?: string | null
   totalAmount?: number | string | null
   paymentStatus?: string | null
+  linkedCount?: number
   balanceSummary?: {
     isTrackable: boolean
     remainingBalance: number
+    derivedPaymentStatus?: string
   } | null
 }
 
@@ -45,6 +49,7 @@ interface ManualDocumentLinkDialogProps {
   sourceDocument: LinkableDocumentCandidate | null
   clientId?: number | null
   alreadyLinkedIds?: number[]
+  sourceImputationSummary?: SourceImputationSummary | null
   onClose: () => void
   onLinked: () => void
 }
@@ -90,6 +95,7 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
   sourceDocument,
   clientId,
   alreadyLinkedIds = [],
+  sourceImputationSummary,
   onClose,
   onLinked
 }) => {
@@ -98,8 +104,13 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [companyScope, setCompanyScope] = useState(false)
+  const [onlyPending, setOnlyPending] = useState(true)
   const [linkType, setLinkType] = useState('')
   const [selectedAmounts, setSelectedAmounts] = useState<Record<number, string>>({})
+  const [liveLinkedIds, setLiveLinkedIds] = useState<number[]>(alreadyLinkedIds)
+  const [liveImputation, setLiveImputation] = useState<SourceImputationSummary | null>(
+    sourceImputationSummary || null
+  )
 
   const effectiveClientId = clientId || sourceDocument?.clientId || null
 
@@ -108,8 +119,26 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
     setSelectedAmounts({})
     setLinkType('')
     setSearch('')
+    setOnlyPending(true)
     setCompanyScope(!effectiveClientId)
-  }, [open, sourceDocument, effectiveClientId])
+    setLiveLinkedIds(alreadyLinkedIds)
+    setLiveImputation(sourceImputationSummary || null)
+
+    if (!sourceImputationSummary || alreadyLinkedIds.length === 0) {
+      documentLinksApi
+        .getDocumentLinks(sourceDocument.id)
+        .then(res => {
+          const linked = (res.links || [])
+            .map(l => l.relatedDocument?.id)
+            .filter(Boolean) as number[]
+          setLiveLinkedIds(linked)
+          if (res.sourceImputationSummary) {
+            setLiveImputation(res.sourceImputationSummary)
+          }
+        })
+        .catch(() => null)
+    }
+  }, [open, sourceDocument, effectiveClientId, alreadyLinkedIds, sourceImputationSummary])
 
   useEffect(() => {
     if (!open || !sourceDocument) return
@@ -151,11 +180,19 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
   }, [linkType, sourceBucket])
 
   const filteredCandidates = useMemo(() => {
-    const excluded = new Set([sourceDocument?.id, ...alreadyLinkedIds].filter(Boolean) as number[])
+    const excluded = new Set([sourceDocument?.id, ...liveLinkedIds].filter(Boolean) as number[])
     const q = search.trim().toLowerCase()
 
-    return candidates.filter(c => {
+    const list = candidates.filter(c => {
       if (excluded.has(c.id)) return false
+      if (onlyPending) {
+        const payStat = c.balanceSummary?.isTrackable
+          ? c.balanceSummary.derivedPaymentStatus
+          : c.paymentStatus
+        if (payStat === 'PAID') return false
+        const bucket = normalizeDocBucket(c.normalizedDocumentType || c.documentType)
+        if (bucket === 'remito' && (c.linkedCount ?? 0) > 0) return false
+      }
       if (!q) return true
       const text = [c.documentType, c.documentNumber, c.originalName, c.issuerName, c.recipientName]
         .filter(Boolean)
@@ -163,33 +200,17 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
         .toLowerCase()
       return text.includes(q)
     })
-  }, [candidates, sourceDocument?.id, alreadyLinkedIds, search])
+
+    return [...list].sort((a, b) => {
+      const aRemain = a.balanceSummary?.isTrackable ? a.balanceSummary.remainingBalance : 0
+      const bRemain = b.balanceSummary?.isTrackable ? b.balanceSummary.remainingBalance : 0
+      if (aRemain > 0 && bRemain === 0) return -1
+      if (bRemain > 0 && aRemain === 0) return 1
+      return 0
+    })
+  }, [candidates, sourceDocument?.id, liveLinkedIds, search, onlyPending])
 
   const selectedIds = useMemo(() => Object.keys(selectedAmounts).map(Number), [selectedAmounts])
-
-  const toggleCandidate = (candidate: LinkableDocumentCandidate) => {
-    setSelectedAmounts(prev => {
-      const next = { ...prev }
-      if (next[candidate.id] !== undefined) {
-        delete next[candidate.id]
-      } else {
-        const candRemain = candidate.balanceSummary?.isTrackable
-          ? candidate.balanceSummary.remainingBalance
-          : Number(candidate.totalAmount || 0)
-        const srcTotal = Number(sourceDocument?.totalAmount || 0)
-        const defaultAmt =
-          isMonetaryContext && candRemain > 0
-            ? srcTotal > 0 && MONETARY_SOURCE_TYPES.has(sourceBucket)
-              ? Math.min(srcTotal, candRemain)
-              : candRemain
-            : srcTotal > 0 && isMonetaryContext
-              ? srcTotal
-              : ''
-        next[candidate.id] = defaultAmt !== '' && defaultAmt > 0 ? String(defaultAmt) : ''
-      }
-      return next
-    })
-  }
 
   const totalImputed = useMemo(
     () =>
@@ -199,6 +220,39 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
       }, 0),
     [selectedIds, selectedAmounts]
   )
+
+  const initialSourcePool = useMemo(() => {
+    if (liveImputation?.isPaymentSource) return liveImputation.unappliedAmount
+    return Number(sourceDocument?.totalAmount || 0)
+  }, [liveImputation, sourceDocument?.totalAmount])
+
+  const toggleCandidate = (candidate: LinkableDocumentCandidate) => {
+    setSelectedAmounts(prev => {
+      const next = { ...prev }
+      if (next[candidate.id] !== undefined) {
+        delete next[candidate.id]
+      } else {
+        const alreadyCheckedSum = Object.values(next).reduce((acc, v) => acc + (Number(v) || 0), 0)
+        const remainingPool = Math.max(0, initialSourcePool - alreadyCheckedSum)
+        const candRemain = candidate.balanceSummary?.isTrackable
+          ? candidate.balanceSummary.remainingBalance
+          : Number(candidate.totalAmount || 0)
+
+        let defaultAmt: number | '' = ''
+        if (isMonetaryContext) {
+          if (candRemain > 0 && MONETARY_SOURCE_TYPES.has(sourceBucket)) {
+            defaultAmt = remainingPool > 0 ? Math.min(remainingPool, candRemain) : candRemain
+          } else if (candRemain > 0) {
+            defaultAmt = candRemain
+          } else if (remainingPool > 0) {
+            defaultAmt = remainingPool
+          }
+        }
+        next[candidate.id] = defaultAmt !== '' && defaultAmt > 0 ? String(Math.round(defaultAmt * 100) / 100) : ''
+      }
+      return next
+    })
+  }
 
   const handleConfirm = async () => {
     if (!sourceDocument || selectedIds.length === 0) return
@@ -258,6 +312,19 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
 
       <DialogContent dividers>
         <Stack spacing={2}>
+          {liveImputation?.isPaymentSource && (
+            <Alert severity={liveImputation.unappliedAmount > 1 ? 'info' : 'success'} sx={{ py: 0.5 }}>
+              <Typography variant='body2'>
+                <strong>Total comprobante:</strong> {sourceDocument.currency || '$'}{' '}
+                {liveImputation.totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })} ·{' '}
+                <strong>Ya imputado:</strong> {sourceDocument.currency || '$'}{' '}
+                {liveImputation.imputedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })} ·{' '}
+                <strong>Disponible para aplicar:</strong> {sourceDocument.currency || '$'}{' '}
+                {liveImputation.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            </Alert>
+          )}
+
           <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
             <TextField
               size='small'
@@ -288,6 +355,16 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
                 </MenuItem>
               ))}
             </TextField>
+
+            <Button
+              size='small'
+              variant={onlyPending ? 'contained' : 'outlined'}
+              color='info'
+              onClick={() => setOnlyPending(prev => !prev)}
+              startIcon={<Icon icon='tabler:filter' fontSize={16} />}
+            >
+              {onlyPending ? 'Solo pendientes' : 'Incluyendo pagados'}
+            </Button>
 
             {effectiveClientId && (
               <Button
@@ -350,6 +427,13 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
                                 {cand.documentDate}
                               </Typography>
                             )}
+                            {cand.balanceSummary?.isTrackable && cand.balanceSummary.derivedPaymentStatus && (
+                              <StatusChip
+                                variantType='payment'
+                                status={cand.balanceSummary.derivedPaymentStatus}
+                                sx={{ height: 18, fontSize: '0.62rem' }}
+                              />
+                            )}
                           </Box>
                           <Typography variant='caption' color='text.secondary' display='block' noWrap>
                             {cand.issuerName || '—'} → {cand.recipientName || '—'}
@@ -388,11 +472,11 @@ export const ManualDocumentLinkDialog: React.FC<ManualDocumentLinkDialogProps> =
 
           {selectedIds.length > 0 &&
             MONETARY_SOURCE_TYPES.has(sourceBucket) &&
-            Number(sourceDocument.totalAmount || 0) > 0 &&
-            totalImputed > Number(sourceDocument.totalAmount) + 1 && (
+            initialSourcePool > 0 &&
+            totalImputed > initialSourcePool + 1 && (
               <Alert severity='warning'>
-                La suma imputada (${totalImputed.toLocaleString('es-AR', { minimumFractionDigits: 2 })}) supera el total de este comprobante ($
-                {Number(sourceDocument.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}). Podés continuar si corresponde a intereses o ajustes.
+                La suma imputada (${totalImputed.toLocaleString('es-AR', { minimumFractionDigits: 2 })}) supera el disponible de este comprobante ($
+                {initialSourcePool.toLocaleString('es-AR', { minimumFractionDigits: 2 })}). Podés continuar si corresponde a intereses o ajustes.
               </Alert>
             )}
         </Stack>

@@ -14,6 +14,7 @@ import {
   UpsertEmailChannelPayload,
   UpsertTelegramChannelPayload,
   UpsertWhatsappChannelPayload,
+  WhatsappGroupItem,
   WhatsappMessageItem,
   WhatsappMessagesStats,
   WhatsappRuntimeSnapshot
@@ -38,6 +39,9 @@ export interface ChannelsState {
   whatsappChannel: CompanyWhatsappChannelItem | null
   whatsappRuntime: WhatsappRuntimeSnapshot | null
   whatsappConfigured: boolean
+  whatsappGroups: WhatsappGroupItem[]
+  whatsappGroupsConnected: boolean
+  loadingWhatsappGroups: boolean
   whatsappMessages: WhatsappMessageItem[]
   whatsappMessagesTotal: number
   whatsappMessagesStats: WhatsappMessagesStats
@@ -77,6 +81,9 @@ const initialState: ChannelsState = {
   whatsappChannel: null,
   whatsappRuntime: null,
   whatsappConfigured: false,
+  whatsappGroups: [],
+  whatsappGroupsConnected: false,
+  loadingWhatsappGroups: false,
   whatsappMessages: [],
   whatsappMessagesTotal: 0,
   whatsappMessagesStats: { total: 0, processed: 0, skipped: 0, errors: 0 },
@@ -218,6 +225,12 @@ export const saveWhatsappChannelSettings = createAsyncThunk(
     return res as CompanyWhatsappConfigResponse & { message: string }
   }
 )
+
+export const fetchWhatsappGroups = createAsyncThunk('channels/fetchWhatsappGroups', async () => {
+  const res = await apiConnector.get('/channels/whatsapp/groups')
+
+  return res as { connected: boolean; groups: WhatsappGroupItem[] }
+})
 
 export const fetchWhatsappMessages = createAsyncThunk(
   'channels/fetchWhatsappMessages',
@@ -469,6 +482,17 @@ export const channelsSlice = createSlice({
       })
       .addCase(fetchWhatsappMessages.rejected, state => {
         state.loadingWhatsappMessages = false
+      })
+      .addCase(fetchWhatsappGroups.pending, state => {
+        state.loadingWhatsappGroups = true
+      })
+      .addCase(fetchWhatsappGroups.fulfilled, (state, action) => {
+        state.loadingWhatsappGroups = false
+        state.whatsappGroupsConnected = action.payload.connected
+        state.whatsappGroups = action.payload.groups || []
+      })
+      .addCase(fetchWhatsappGroups.rejected, state => {
+        state.loadingWhatsappGroups = false
       })
 
       // Telegram reducers

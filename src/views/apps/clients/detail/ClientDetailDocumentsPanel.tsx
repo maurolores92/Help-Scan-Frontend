@@ -54,11 +54,15 @@ interface ClientDetailDocumentsPanelProps {
   loading: boolean
   activeType: string
   roleFilter: 'all' | 'issuer' | 'recipient' | 'linked'
+  paymentFilter: string
+  linkStateFilter: 'all' | 'linked' | 'unlinked'
   searchInput: string
   page: number
   pageSize: number
   onTypeChange: (nextType: string) => void
   onRoleChange: (nextRole: 'all' | 'issuer' | 'recipient' | 'linked') => void
+  onPaymentFilterChange: (nextPayment: string) => void
+  onLinkStateChange: (nextLinkState: 'all' | 'linked' | 'unlinked') => void
   onSearchChange: (val: string) => void
   onPageChange: (nextPage: number, nextPageSize: number) => void
   onPreviewPdf: (doc: ClientDocumentItem) => void
@@ -73,11 +77,15 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
   loading,
   activeType,
   roleFilter,
+  paymentFilter,
+  linkStateFilter,
   searchInput,
   page,
   pageSize,
   onTypeChange,
   onRoleChange,
+  onPaymentFilterChange,
+  onLinkStateChange,
   onSearchChange,
   onPageChange,
   onPreviewPdf,
@@ -142,21 +150,28 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
     {
       field: 'totalAmount',
       headerName: 'Importe / Saldo',
-      width: 150,
+      width: 165,
       renderCell: ({ row }: { row: ClientDocumentItem }) => {
         if (row.totalAmount === null || row.totalAmount === undefined) {
           return <Typography variant='body2' color='text.disabled'>—</Typography>
         }
-
+        const curr = row.currency || '$'
         const bal = row.balanceSummary
+        const imp = row.imputationSummary
+
         return (
           <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {row.currency || '$'} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            <Typography variant='body2' sx={{ fontWeight: 700 }}>
+              {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
             </Typography>
-            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
+            {bal?.isTrackable && bal.remainingBalance > 0 && bal.paidAmount > 0 && (
               <Typography variant='caption' color='info.main' display='block' noWrap sx={{ fontWeight: 600 }}>
-                Saldo: {row.currency || '$'} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                Falta: {curr} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+            {imp?.isPaymentSource && imp.unappliedAmount > 1 && (
+              <Typography variant='caption' color='warning.main' display='block' noWrap sx={{ fontWeight: 600 }}>
+                Sin imputar: {curr} {imp.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
               </Typography>
             )}
           </Box>
@@ -164,15 +179,36 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
       }
     },
     {
+      field: 'paymentStatus',
+      headerName: 'Estado Pago',
+      width: 145,
+      renderCell: ({ row }: { row: ClientDocumentItem }) => {
+        const effectivePayStatus = row.balanceSummary?.isTrackable
+          ? row.balanceSummary.derivedPaymentStatus
+          : row.paymentStatus || 'PENDING'
+        const linked = row.linkedCount ?? 0
+
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.3, alignItems: 'flex-start' }}>
+            <StatusChip variantType='payment' status={effectivePayStatus} sx={{ height: 20, fontSize: '0.68rem' }} />
+            <Chip
+              size='small'
+              variant='outlined'
+              color={linked > 0 ? 'primary' : 'default'}
+              icon={<Icon icon={linked > 0 ? 'tabler:link' : 'tabler:link-off'} fontSize={12} />}
+              label={linked > 0 ? `${linked} vínculo${linked > 1 ? 's' : ''}` : 'Sin vincular'}
+              onClick={() => onOpenLinkDialog?.(row)}
+              sx={{ height: 18, fontSize: '0.62rem', cursor: onOpenLinkDialog ? 'pointer' : 'default' }}
+            />
+          </Box>
+        )
+      }
+    },
+    {
       field: 'status',
-      headerName: 'Estado / Pago',
-      width: 155,
-      renderCell: ({ row }: { row: ClientDocumentItem }) => (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35, alignItems: 'flex-start' }}>
-          <StatusChip status={row.status} />
-          {row.paymentStatus === 'PARTIALLY_PAID' && <StatusChip status='PARTIALLY_PAID' sx={{ height: 18, fontSize: '0.65rem' }} />}
-        </Box>
-      )
+      headerName: 'Validación',
+      width: 120,
+      renderCell: ({ row }: { row: ClientDocumentItem }) => <StatusChip status={row.status} />
     },
     {
       field: 'actions',
@@ -267,7 +303,7 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
         <TextField
           select
           size='small'
-          sx={{ minWidth: 230 }}
+          sx={{ minWidth: 210 }}
           label='Rol del Cliente'
           value={roleFilter}
           onChange={e => onRoleChange(e.target.value as any)}
@@ -276,6 +312,35 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
           <MenuItem value='recipient'>Cliente / Destinatario ({summary?.byRole?.recipient ?? 0})</MenuItem>
           <MenuItem value='issuer'>Emitidos por el Cliente ({summary?.byRole?.issuer ?? 0})</MenuItem>
           <MenuItem value='linked'>Vínculo directo ({summary?.byRole?.linked ?? 0})</MenuItem>
+        </TextField>
+
+        <TextField
+          select
+          size='small'
+          sx={{ minWidth: 205 }}
+          label='Estado de Pago'
+          value={paymentFilter}
+          onChange={e => onPaymentFilterChange(e.target.value)}
+        >
+          <MenuItem value='all'>Todos</MenuItem>
+          <MenuItem value='UNPAID_OR_PARTIAL'>Pendientes o Parciales</MenuItem>
+          <MenuItem value='PENDING'>Pendiente de Pago</MenuItem>
+          <MenuItem value='PARTIALLY_PAID'>Pagado Parcial</MenuItem>
+          <MenuItem value='PAID'>Pagado</MenuItem>
+          <MenuItem value='NOT_APPLICABLE'>No Aplica</MenuItem>
+        </TextField>
+
+        <TextField
+          select
+          size='small'
+          sx={{ minWidth: 170 }}
+          label='Conciliación'
+          value={linkStateFilter}
+          onChange={e => onLinkStateChange(e.target.value as any)}
+        >
+          <MenuItem value='all'>Todos</MenuItem>
+          <MenuItem value='unlinked'>Sin vincular</MenuItem>
+          <MenuItem value='linked'>Con vínculos</MenuItem>
         </TextField>
       </Box>
 

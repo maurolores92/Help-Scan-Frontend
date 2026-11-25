@@ -40,6 +40,7 @@ export const buildDocumentsColumns = (handlers: {
   onPreview: (doc: DocumentItem) => void
   onValidate: (doc: DocumentItem) => void
   onDelete: (doc: DocumentItem) => void
+  onPaymentStatus?: (doc: DocumentItem) => void
 }): GridColDef[] => [
     {
       field: 'documentType',
@@ -277,6 +278,70 @@ export const buildDocumentsColumns = (handlers: {
                 </Box>
               </Tooltip>
             )}
+          </Box>
+        )
+      }
+    },
+    {
+      field: 'totalAmount',
+      headerName: 'Importe / Saldo',
+      flex: 0.13,
+      minWidth: 145,
+      renderCell: ({ row }: { row: DocumentItem }) => {
+        if (row.totalAmount === null || row.totalAmount === undefined) {
+          return <Typography variant='body2' color='text.disabled'>—</Typography>
+        }
+        const curr = row.currency || '$'
+        const bal = row.balanceSummary
+        const imp = row.imputationSummary
+
+        return (
+          <Box sx={{ overflow: 'hidden' }}>
+            <Typography variant='body2' noWrap sx={{ fontWeight: 700 }}>
+              {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </Typography>
+            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
+              <Typography variant='caption' color='info.main' noWrap display='block' sx={{ fontWeight: 600 }}>
+                Falta: {curr} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+            {imp?.isPaymentSource && imp.unappliedAmount > 1 && (
+              <Typography variant='caption' color='warning.main' noWrap display='block' sx={{ fontWeight: 600 }}>
+                Sin imputar: {curr} {imp.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+          </Box>
+        )
+      }
+    },
+    {
+      field: 'paymentStatus',
+      headerName: 'Pago / Vínculos',
+      flex: 0.14,
+      minWidth: 155,
+      renderCell: ({ row }: { row: DocumentItem }) => {
+        const payStatus = row.balanceSummary?.isTrackable
+          ? row.balanceSummary.derivedPaymentStatus
+          : row.paymentStatus || 'PENDING'
+        const linked = row.linkedCount ?? 0
+
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35, alignItems: 'flex-start' }}>
+            <Box
+              onClick={() => handlers.onPaymentStatus?.(row)}
+              sx={{ cursor: handlers.onPaymentStatus ? 'pointer' : 'default' }}
+            >
+              <StatusChip variantType='payment' status={payStatus} sx={{ height: 20, fontSize: '0.68rem' }} />
+            </Box>
+            <Chip
+              size='small'
+              variant='outlined'
+              color={linked > 0 ? 'primary' : 'default'}
+              icon={<Icon icon={linked > 0 ? 'tabler:link' : 'tabler:link-off'} fontSize={12} />}
+              label={linked > 0 ? `${linked} vínculo${linked > 1 ? 's' : ''}` : 'Sin vincular'}
+              onClick={() => handlers.onValidate(row)}
+              sx={{ height: 18, fontSize: '0.62rem', cursor: 'pointer' }}
+            />
           </Box>
         )
       }
