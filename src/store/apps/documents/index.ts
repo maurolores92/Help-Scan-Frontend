@@ -12,9 +12,79 @@ export type DocumentStatus =
   | 'PROCESSED'
   | 'ERROR'
 
-export type DocumentPaymentStatus = 'PENDING' | 'SCHEDULED' | 'PAID' | 'NOT_APPLICABLE'
+export type DocumentPaymentStatus =
+  | 'PENDING'
+  | 'PARTIALLY_PAID'
+  | 'SCHEDULED'
+  | 'PAID'
+  | 'NOT_APPLICABLE'
 export type DocumentDueFilter = 'OVERDUE' | 'DUE_SOON'
 export type DocumentExportFormat = 'xlsx' | 'csv' | 'pdf' | 'zip'
+
+export interface DocumentBalanceSummary {
+  isTrackable: boolean
+  totalAmount: number
+  creditedAmount: number
+  debitedAmount: number
+  paidAmount: number
+  effectiveTotal: number
+  remainingBalance: number
+  overpaidAmount: number
+  derivedPaymentStatus: DocumentPaymentStatus
+}
+
+export interface LinkedDocumentSummary {
+  id: number
+  originalName: string
+  documentType?: string | null
+  documentLetter?: string | null
+  pointOfSale?: string | null
+  documentNumber?: string | null
+  documentDate?: string | null
+  issuerName?: string | null
+  issuerTaxId?: string | null
+  recipientName?: string | null
+  recipientTaxId?: string | null
+  currency?: string | null
+  totalAmount?: number | null
+  status: string
+  paymentStatus?: DocumentPaymentStatus
+}
+
+export interface DocumentLinkItem {
+  id: number
+  sourceDocumentId: number
+  targetDocumentId: number
+  direction: 'outgoing' | 'incoming'
+  linkType: string
+  linkTypeLabel: string
+  appliedAmount: number | null
+  matchSource: 'AUTO_EXACT' | 'SUGGESTED_ACCEPTED' | 'MANUAL'
+  confidence?: number | null
+  notes?: string | null
+  createdAt?: string
+  relatedDocument: LinkedDocumentSummary | null
+}
+
+export interface DocumentLinkSuggestion {
+  targetDocumentId: number
+  swapDirection: boolean
+  linkType: string
+  linkTypeLabel: string
+  score: number
+  isExactNumberMatch: boolean
+  reasons: string[]
+  suggestedAppliedAmount: number | null
+  candidateRemainingBalance: number | null
+  relatedDocument: LinkedDocumentSummary | null
+}
+
+export interface DocumentLinksResponse {
+  documentId: number
+  balanceSummary: DocumentBalanceSummary
+  links: DocumentLinkItem[]
+  suggestions: DocumentLinkSuggestion[]
+}
 
 export interface DocumentValidationWarning {
   code: 'DUPLICATE_FISCAL' | 'AMOUNT_MISMATCH' | 'INVALID_CUIT'
@@ -50,6 +120,15 @@ export type DocumentFormFieldType =
   | 'textarea'
   | 'switch'
   | 'items_table'
+  | 'vouchers_table'
+
+export interface AppliedVoucherItem {
+  voucherType: string
+  voucherNumber: string
+  voucherDate?: string | null
+  originalAmount?: number | null
+  appliedAmount?: number | null
+}
 
 export interface DocumentFormFieldSchema {
   key: string
@@ -187,6 +266,8 @@ export interface DocumentItem {
   duplicateOfDocumentId?: number | null
   validationWarnings?: DocumentValidationWarning[] | null
   formRecord?: DocumentFormRecordSummary | null
+  balanceSummary?: DocumentBalanceSummary
+  linkedCount?: number
   createdAt: string
   updatedAt: string
 }

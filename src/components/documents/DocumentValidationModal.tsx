@@ -14,6 +14,8 @@ import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
+import Tab from '@mui/material/Tab'
+import Tabs from '@mui/material/Tabs'
 import Icon from 'src/@core/components/icon'
 import toast from 'react-hot-toast'
 import apiConnector from 'src/services/api.service'
@@ -28,6 +30,7 @@ import {
   ValidateDocumentPayload
 } from 'src/store/apps/documents'
 import DynamicDocumentForm from './DynamicDocumentForm'
+import DocumentLinksPanel from './DocumentLinksPanel'
 
 interface DocumentValidationModalProps {
   open: boolean
@@ -38,6 +41,7 @@ interface DocumentValidationModalProps {
   isValidating?: boolean
   onReprocess?: (doc: DocumentItem) => Promise<void>
   reprocessing?: boolean
+  onLinksUpdated?: () => void
 }
 
 const resolveSchemaByRawType = (
@@ -57,7 +61,25 @@ const resolveSchemaByRawType = (
       s => Array.isArray(s.matchAliases) && s.matchAliases.some(a => a.toLowerCase() === norm)
     )
     if (byAlias) return byAlias
-    if (norm.includes('factura') || norm.includes('nota_cred') || norm.includes('nota_deb')) {
+    if (norm.includes('nota_cred') || norm === 'nc' || norm === 'nce') {
+      return schemas.find(s => s.code === 'nota_credito') || schemas[0]
+    }
+    if (norm.includes('nota_deb') || norm === 'nd' || norm === 'nde') {
+      return schemas.find(s => s.code === 'nota_debito') || schemas[0]
+    }
+    if (norm.includes('retencion') || norm === 'sire' || norm === 'sicore') {
+      return schemas.find(s => s.code === 'certificado_retencion') || schemas[0]
+    }
+    if (norm.includes('orden_pago') || norm === 'op') {
+      return schemas.find(s => s.code === 'orden_pago') || schemas[0]
+    }
+    if (norm.includes('transferencia') || norm.includes('deposito') || norm.includes('mercado_pago')) {
+      return schemas.find(s => s.code === 'transferencia_pago') || schemas[0]
+    }
+    if (norm.includes('ticket') || norm.includes('tique')) {
+      return schemas.find(s => s.code === 'ticket_fiscal') || schemas[0]
+    }
+    if (norm.includes('factura') || norm === 'fce') {
       return schemas.find(s => s.code === 'factura') || schemas[0]
     }
     if (norm.includes('remito')) return schemas.find(s => s.code === 'remito') || schemas[0]
@@ -68,6 +90,88 @@ const resolveSchemaByRawType = (
   }
 
   return schemas.find(s => s.code === 'documento_general') || schemas[0]
+}
+
+const normalizeVoucherRows = (raw: any) => {
+  let source = raw
+  if (typeof source === 'string') {
+    const trimmed = source.trim()
+    if (!trimmed) return []
+    try {
+      source = JSON.parse(trimmed)
+    } catch {
+      return trimmed
+        .split(/[\n,;]+/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => ({
+          voucherType: 'Factura',
+          voucherNumber: line,
+          voucherDate: '',
+          originalAmount: null,
+          appliedAmount: null
+        }))
+    }
+  }
+  if (!Array.isArray(source)) return []
+
+  return source
+    .filter(row => row && typeof row === 'object')
+    .map(row => {
+      const rawOrig = row.originalAmount ?? row.importe_original ?? row.montoOriginal ?? row.total
+      const rawApplied = row.appliedAmount ?? row.importe_imputado ?? row.montoAplicado ?? row.importe
+      return {
+        voucherType: String(row.voucherType || row.tipo_comprobante || row.tipo || row.type || 'Factura').trim(),
+        voucherNumber: String(
+          row.voucherNumber || row.numero_comprobante || row.numero || row.number || row.comprobante || ''
+        ).trim(),
+        voucherDate: row.voucherDate || row.fecha || row.date || '',
+        originalAmount:
+          rawOrig !== undefined && rawOrig !== null && rawOrig !== '' && Number.isFinite(Number(rawOrig))
+            ? Number(rawOrig)
+            : null,
+        appliedAmount:
+          rawApplied !== undefined && rawApplied !== null && rawApplied !== '' && Number.isFinite(Number(rawApplied))
+            ? Number(rawApplied)
+            : null
+      }
+    })
+    .filter(row => row.voucherNumber.length > 0 || row.appliedAmount !== null)
+}
+
+const formatAttributeTextValue = (val: any): string => {
+  if (val === null || val === undefined) return ''
+  if (Array.isArray(val)) {
+    return val
+      .map(item => {
+        if (item && typeof item === 'object') {
+          const title = [
+            item.voucherType || item.tipo_comprobante || item.tipo || '',
+            item.voucherNumber || item.numero_comprobante || item.numero || item.comprobante || ''
+          ]
+            .filter(Boolean)
+            .join(' ')
+          const amt = item.appliedAmount ?? item.importe_imputado ?? item.importe ?? item.montoAplicado
+          if (title || amt !== undefined) {
+            return `${title || 'Comprobante'}${amt !== undefined && amt !== null ? ` ($${amt})` : ''}`
+          }
+          return Object.entries(item)
+            .filter(([, v]) => v !== null && v !== undefined && v !== '')
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(' · ')
+        }
+        return String(item ?? '').trim()
+      })
+      .filter(Boolean)
+      .join('\n')
+  }
+  if (typeof val === 'object') {
+    return Object.entries(val)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ')
+  }
+  return String(val)
 }
 
 const hydrateCustomValues = (
@@ -90,7 +194,16 @@ const hydrateCustomValues = (
   for (const section of schema.sectionsSchema || []) {
     for (const field of section.fields || []) {
       if (field.target !== 'custom') continue
-      if (merged[field.key] !== undefined && merged[field.key] !== '') continue
+
+      if (field.fieldType === 'vouchers_table' && merged[field.key] !== undefined && merged[field.key] !== '') {
+        merged[field.key] = normalizeVoucherRows(merged[field.key])
+        if (merged[field.key].length > 0) continue
+      } else if (merged[field.key] !== undefined && merged[field.key] !== '') {
+        if (field.fieldType === 'text' || field.fieldType === 'textarea') {
+          merged[field.key] = formatAttributeTextValue(merged[field.key])
+        }
+        continue
+      }
 
       const candidateKeys = [field.key, ...(field.aiAttrKeys || [])]
       let hit: any = undefined
@@ -101,7 +214,13 @@ const hydrateCustomValues = (
         }
       }
       if (hit !== undefined) {
-        merged[field.key] = hit
+        if (field.fieldType === 'vouchers_table') {
+          merged[field.key] = normalizeVoucherRows(hit)
+        } else if (field.fieldType === 'text' || field.fieldType === 'textarea') {
+          merged[field.key] = formatAttributeTextValue(hit)
+        } else {
+          merged[field.key] = hit
+        }
       } else if (field.defaultValue !== undefined && merged[field.key] === undefined) {
         merged[field.key] = field.defaultValue
       }
@@ -119,7 +238,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   onReject,
   isValidating = false,
   onReprocess,
-  reprocessing = false
+  reprocessing = false,
+  onLinksUpdated
 }) => {
   const dispatch = useDispatch<AppDispatch>()
   const { formSchemas, loadingForms } = useSelector((state: RootState) => state.documents)
@@ -129,6 +249,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   const [rejecting, setRejecting] = useState<boolean>(false)
   const [rejectReason, setRejectReason] = useState<string>('')
   const [originEmailOpen, setOriginEmailOpen] = useState<boolean>(false)
+  const [rightTab, setRightTab] = useState<'form' | 'links'>('form')
+  const [linksCount, setLinksCount] = useState<number>(0)
 
   const [documentType, setDocumentType] = useState<string>('factura')
   const [coreValues, setCoreValues] = useState<Record<string, any>>({})
@@ -144,6 +266,7 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   useEffect(() => {
     if (!doc) return
 
+    setRightTab('form')
     const matchedSchema = resolveSchemaByRawType(
       formSchemas,
       doc.formRecord?.documentType || doc.documentType
@@ -500,7 +623,34 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
               md={6}
               sx={{ height: '100%', overflowY: 'auto', p: 3, backgroundColor: 'background.paper' }}
             >
-              {rejecting ? (
+              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+                <Tabs value={rightTab} onChange={(_e, val) => setRightTab(val)}>
+                  <Tab
+                    value='form'
+                    icon={<Icon icon='tabler:forms' fontSize={17} />}
+                    iconPosition='start'
+                    label='Formulario de Validación'
+                    sx={{ minHeight: 42, textTransform: 'none', fontWeight: 600 }}
+                  />
+                  <Tab
+                    value='links'
+                    icon={<Icon icon='tabler:link' fontSize={17} />}
+                    iconPosition='start'
+                    label={`Vínculos y Saldo (${linksCount})`}
+                    sx={{ minHeight: 42, textTransform: 'none', fontWeight: 600 }}
+                  />
+                </Tabs>
+              </Box>
+
+              {rightTab === 'links' ? (
+                <DocumentLinksPanel
+                  document={doc}
+                  onLinksChanged={onLinksUpdated}
+                  onCountChange={setLinksCount}
+                />
+              ) : (
+                <>
+                  {rejecting ? (
                 <Alert severity='error' sx={{ mb: 2.5 }}>
                   <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 1 }}>
                     Rechazar Documento
@@ -607,6 +757,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                 <Alert severity='warning'>
                   No se pudieron cargar las plantillas de formularios. Reintentá en unos segundos.
                 </Alert>
+              )}
+                </>
               )}
             </Grid>
           </Grid>

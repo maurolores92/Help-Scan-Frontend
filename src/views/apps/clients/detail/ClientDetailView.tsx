@@ -25,6 +25,7 @@ import {
 import { ClientDocumentItem, ClientFormPayload } from 'src/types/apps/clientTypes'
 import PdfViewerModal from 'src/components/documents/PdfViewerModal'
 import DocumentValidationModal from 'src/components/documents/DocumentValidationModal'
+import ManualDocumentLinkDialog from 'src/components/documents/ManualDocumentLinkDialog'
 import ClientFormDialog from '../ClientFormDialog'
 import ClientDetailHeaderCard from './ClientDetailHeaderCard'
 import ClientDetailDocumentsPanel from './ClientDetailDocumentsPanel'
@@ -55,6 +56,7 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
   const [syncing, setSyncing] = useState(false)
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
   const [validatingDoc, setValidatingDoc] = useState<DocumentItem | null>(null)
+  const [linkingDoc, setLinkingDoc] = useState<ClientDocumentItem | null>(null)
 
   const canUpdate = ability.can('update', 'clients')
 
@@ -219,6 +221,7 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         }}
         onPreviewPdf={doc => openFullDocument(doc, 'preview')}
         onOpenValidation={doc => openFullDocument(doc, 'validate')}
+        onOpenLinkDialog={doc => setLinkingDoc(doc)}
       />
 
       <ClientFormDialog
@@ -246,6 +249,15 @@ export const ClientDetailView = ({ clientId }: { clientId: number }) => {
         isValidating={validating}
         onReprocess={handleReprocess}
         reprocessing={Boolean(validatingDoc && reprocessingId === validatingDoc.id)}
+        onLinksUpdated={loadClientDetail}
+      />
+
+      <ManualDocumentLinkDialog
+        open={Boolean(linkingDoc)}
+        sourceDocument={linkingDoc}
+        clientId={clientId}
+        onClose={() => setLinkingDoc(null)}
+        onLinked={loadClientDetail}
       />
     </Box>
   )

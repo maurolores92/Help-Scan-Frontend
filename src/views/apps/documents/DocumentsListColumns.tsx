@@ -17,6 +17,12 @@ const formatDocTypeUpper = (type?: string | null) => {
 
 const resolveDocumentTypeIcon = (type?: string | null) => {
   const normalized = (type || '').toLowerCase().trim()
+  if (normalized.includes('nota_cred') || normalized === 'nc') return 'tabler:file-minus'
+  if (normalized.includes('nota_deb') || normalized === 'nd') return 'tabler:file-plus'
+  if (normalized.includes('orden_pago') || normalized === 'op') return 'tabler:cash-banknote'
+  if (normalized.includes('retencion')) return 'tabler:certificate'
+  if (normalized.includes('transferencia') || normalized.includes('deposito')) return 'tabler:arrows-exchange'
+  if (normalized.includes('ticket') || normalized.includes('tique')) return 'tabler:ticket'
   if (normalized.startsWith('factura')) return 'tabler:file-invoice'
   if (normalized === 'presupuesto') return 'tabler:file-dollar'
   if (normalized === 'nota_pedido') return 'tabler:clipboard-list'
@@ -52,6 +58,14 @@ export const buildDocumentsColumns = (handlers: {
               <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.2, color: 'text.secondary' }}>
                 N° {row.documentNumber}
               </Typography>
+            )}
+            {row.paymentStatus === 'PARTIALLY_PAID' && (
+              <Chip
+                size='small'
+                color='info'
+                label='Pagado Parcial'
+                sx={{ height: 17, mt: 0.25, fontSize: '0.62rem', fontWeight: 700 }}
+              />
             )}
           </Box>
         ) : (

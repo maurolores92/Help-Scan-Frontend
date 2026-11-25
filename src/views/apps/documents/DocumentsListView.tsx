@@ -65,6 +65,7 @@ export const DocumentsListView = () => {
     isBulkDeleteOpen,
     setIsBulkDeleteOpen,
     hasActiveFilters,
+    loadData,
     handleResetFilters,
     handleUpload,
     handleSyncFtp,
@@ -270,6 +271,7 @@ export const DocumentsListView = () => {
         isValidating={validating}
         onReprocess={handleReprocess}
         reprocessing={Boolean(validatingDoc && reprocessingId === validatingDoc.id)}
+        onLinksUpdated={loadData}
       />
 
       {/* Diálogo de confirmación para eliminación individual */}

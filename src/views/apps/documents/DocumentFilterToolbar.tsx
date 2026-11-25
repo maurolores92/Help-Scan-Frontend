@@ -48,10 +48,16 @@ interface DocumentFilterToolbarProps {
 
 const TYPE_ICONS: Record<string, string> = {
   factura: 'tabler:file-invoice',
+  nota_credito: 'tabler:file-minus',
+  nota_debito: 'tabler:file-plus',
   presupuesto: 'tabler:file-dollar',
   nota_pedido: 'tabler:clipboard-list',
   remito: 'tabler:truck-delivery',
   recibo: 'tabler:receipt',
+  orden_pago: 'tabler:cash-banknote',
+  certificado_retencion: 'tabler:certificate',
+  ticket_fiscal: 'tabler:ticket',
+  transferencia_pago: 'tabler:arrows-exchange',
   orden_compra: 'tabler:shopping-cart',
   orden_servicio: 'tabler:tool',
   contrato: 'tabler:file-certificate',
@@ -322,6 +328,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
           >
             <MenuItem value=''>Todos los estados</MenuItem>
             <MenuItem value='PENDING'>Pendiente de pago</MenuItem>
+            <MenuItem value='PARTIALLY_PAID'>Pagado parcial</MenuItem>
             <MenuItem value='SCHEDULED'>Programado</MenuItem>
             <MenuItem value='PAID'>Pagado</MenuItem>
             <MenuItem value='OVERDUE'>Vencidos</MenuItem>

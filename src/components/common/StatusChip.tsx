@@ -24,6 +24,10 @@ interface StatusConfig {
 
 const STATUS_CONFIGS: Record<string, StatusConfig> = {
   PENDING: { label: 'En Cola', color: 'warning' },
+  PARTIALLY_PAID: { label: 'Pagado Parcial', color: 'info' },
+  SCHEDULED: { label: 'Programado', color: 'secondary' },
+  PAID: { label: 'Pagado', color: 'success' },
+  NOT_APPLICABLE: { label: 'No Aplica', color: 'default' },
   PROCESSING: { label: 'Procesando OCR', color: 'info' },
   PENDING_APPROVAL: { label: 'Por Aprobar', color: 'warning' },
   VALIDATED: { label: 'Validado', color: 'success' },

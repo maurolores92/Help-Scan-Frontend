@@ -459,6 +459,7 @@ export const useDocumentsManager = () => {
     isBulkDeleteOpen,
     setIsBulkDeleteOpen,
     hasActiveFilters,
+    loadData,
     handleResetFilters,
     handleUpload,
     handleSyncFtp,

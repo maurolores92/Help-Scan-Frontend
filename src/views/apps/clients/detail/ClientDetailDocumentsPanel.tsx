@@ -22,10 +22,16 @@ import {
 
 const DOCUMENT_TYPE_TABS: Array<{ code: string; label: string; icon: string }> = [
   { code: 'all', label: 'Todos', icon: 'tabler:files' },
-  { code: 'factura', label: 'Facturas / NC / ND', icon: 'tabler:file-invoice' },
+  { code: 'factura', label: 'Facturas', icon: 'tabler:file-invoice' },
+  { code: 'nota_credito', label: 'Notas de Crédito', icon: 'tabler:file-minus' },
+  { code: 'nota_debito', label: 'Notas de Débito', icon: 'tabler:file-plus' },
   { code: 'presupuesto', label: 'Presupuestos', icon: 'tabler:calculator' },
   { code: 'remito', label: 'Remitos', icon: 'tabler:truck-delivery' },
   { code: 'recibo', label: 'Recibos', icon: 'tabler:receipt' },
+  { code: 'orden_pago', label: 'Órdenes de Pago', icon: 'tabler:cash-banknote' },
+  { code: 'certificado_retencion', label: 'Retenciones', icon: 'tabler:certificate' },
+  { code: 'ticket_fiscal', label: 'Tickets Fiscales', icon: 'tabler:ticket' },
+  { code: 'transferencia_pago', label: 'Transferencias', icon: 'tabler:arrows-exchange' },
   { code: 'orden_compra', label: 'Órdenes de Compra', icon: 'tabler:shopping-cart' },
   { code: 'nota_pedido', label: 'Notas de Pedido', icon: 'tabler:clipboard-list' },
   { code: 'orden_servicio', label: 'Órdenes de Servicio', icon: 'tabler:tool' },
@@ -57,6 +63,7 @@ interface ClientDetailDocumentsPanelProps {
   onPageChange: (nextPage: number, nextPageSize: number) => void
   onPreviewPdf: (doc: ClientDocumentItem) => void
   onOpenValidation: (doc: ClientDocumentItem) => void
+  onOpenLinkDialog?: (doc: ClientDocumentItem) => void
 }
 
 export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProps> = ({
@@ -74,7 +81,8 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
   onSearchChange,
   onPageChange,
   onPreviewPdf,
-  onOpenValidation
+  onOpenValidation,
+  onOpenLinkDialog
 }) => {
   const byType = summary?.byType || {}
 
@@ -133,33 +141,46 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
     },
     {
       field: 'totalAmount',
-      headerName: 'Importe',
-      width: 125,
+      headerName: 'Importe / Saldo',
+      width: 150,
       renderCell: ({ row }: { row: ClientDocumentItem }) => {
         if (row.totalAmount === null || row.totalAmount === undefined) {
           return <Typography variant='body2' color='text.disabled'>—</Typography>
         }
 
+        const bal = row.balanceSummary
         return (
-          <Typography variant='body2' sx={{ fontWeight: 600 }}>
-            {row.currency || '$'} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-          </Typography>
+          <Box sx={{ overflow: 'hidden' }}>
+            <Typography variant='body2' sx={{ fontWeight: 600 }}>
+              {row.currency || '$'} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </Typography>
+            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
+              <Typography variant='caption' color='info.main' display='block' noWrap sx={{ fontWeight: 600 }}>
+                Saldo: {row.currency || '$'} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+          </Box>
         )
       }
     },
     {
       field: 'status',
-      headerName: 'Estado',
-      width: 145,
-      renderCell: ({ row }: { row: ClientDocumentItem }) => <StatusChip status={row.status} />
+      headerName: 'Estado / Pago',
+      width: 155,
+      renderCell: ({ row }: { row: ClientDocumentItem }) => (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35, alignItems: 'flex-start' }}>
+          <StatusChip status={row.status} />
+          {row.paymentStatus === 'PARTIALLY_PAID' && <StatusChip status='PARTIALLY_PAID' sx={{ height: 18, fontSize: '0.65rem' }} />}
+        </Box>
+      )
     },
     {
       field: 'actions',
       headerName: 'Acciones',
-      width: 100,
+      width: 130,
       sortable: false,
       renderCell: ({ row }: { row: ClientDocumentItem }) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
           <Tooltip title='Ver PDF'>
             <IconButton size='small' color='secondary' onClick={() => onPreviewPdf(row)}>
               <Icon icon='tabler:file-type-pdf' fontSize={19} />
@@ -170,6 +191,17 @@ export const ClientDetailDocumentsPanel: React.FC<ClientDetailDocumentsPanelProp
               <Icon icon='tabler:forms' fontSize={19} />
             </IconButton>
           </Tooltip>
+          {onOpenLinkDialog && (
+            <Tooltip title={row.linkedCount ? `Vincular comprobantes (${row.linkedCount})` : 'Vincular comprobantes'}>
+              <IconButton
+                size='small'
+                color={row.linkedCount ? 'info' : 'default'}
+                onClick={() => onOpenLinkDialog(row)}
+              >
+                <Icon icon='tabler:link-plus' fontSize={19} />
+              </IconButton>
+            </Tooltip>
+          )}
         </Box>
       )
     }

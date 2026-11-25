@@ -27,6 +27,7 @@ interface DocumentPaymentStatusModalProps {
 
 const PAYMENT_OPTIONS: Array<{ value: DocumentPaymentStatus; label: string }> = [
   { value: 'PENDING', label: 'Pendiente de pago' },
+  { value: 'PARTIALLY_PAID', label: 'Pagado parcial' },
   { value: 'SCHEDULED', label: 'Programado' },
   { value: 'PAID', label: 'Pagado' },
   { value: 'NOT_APPLICABLE', label: 'No aplica (Remito / Legajo)' }

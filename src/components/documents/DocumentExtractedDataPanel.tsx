@@ -34,6 +34,41 @@ const formatKeyLabel = (key: string) =>
     .replace(/\b\w/g, c => c.toUpperCase())
     .trim()
 
+const formatExtractedAttrValue = (val: any): string => {
+  if (typeof val === 'boolean') return val ? 'Sí' : 'No'
+  if (Array.isArray(val)) {
+    return val
+      .map(item => {
+        if (item && typeof item === 'object') {
+          const title = [
+            item.voucherType || item.tipo_comprobante || item.tipo || '',
+            item.voucherNumber || item.numero_comprobante || item.numero || item.comprobante || ''
+          ]
+            .filter(Boolean)
+            .join(' ')
+          const amt = item.appliedAmount ?? item.importe_imputado ?? item.importe ?? item.montoAplicado
+          if (title || amt !== undefined) {
+            return `${title || 'Comprobante'}${amt !== undefined && amt !== null ? ` ($${amt})` : ''}`
+          }
+          return Object.entries(item)
+            .filter(([, v]) => v !== null && v !== undefined && v !== '')
+            .map(([k, v]) => `${k}: ${v}`)
+            .join(' · ')
+        }
+        return String(item ?? '').trim()
+      })
+      .filter(Boolean)
+      .join(' | ')
+  }
+  if (val && typeof val === 'object') {
+    return Object.entries(val)
+      .filter(([, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `${k}: ${v}`)
+      .join(' · ')
+  }
+  return String(val)
+}
+
 const MetadataFieldCard: React.FC<{ label: string; value?: string | number | null }> = ({
   label,
   value
@@ -219,7 +254,7 @@ export const DocumentExtractedDataPanel: React.FC<DocumentExtractedDataPanelProp
               <MetadataFieldCard
                 key={key}
                 label={formatKeyLabel(key)}
-                value={typeof val === 'boolean' ? (val ? 'Sí' : 'No') : String(val)}
+                value={formatExtractedAttrValue(val)}
               />
             ))}
           </Grid>

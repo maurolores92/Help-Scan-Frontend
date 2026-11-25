@@ -10,11 +10,13 @@ import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import Icon from 'src/@core/components/icon'
 import {
+  AppliedVoucherItem,
   DocumentArticleItem,
   DocumentFormFieldSchema,
   DocumentTypeFormDefinition
 } from 'src/store/apps/documents'
 import DocumentItemsEditor from './DocumentItemsEditor'
+import AppliedVouchersEditor from './AppliedVouchersEditor'
 
 interface DynamicDocumentFormProps {
   schema: DocumentTypeFormDefinition
@@ -55,8 +57,44 @@ export const DynamicDocumentForm: React.FC<DynamicDocumentFormProps> = ({
       )
     }
 
+    if (field.fieldType === 'vouchers_table') {
+      const currentVouchers: AppliedVoucherItem[] = Array.isArray(customValues[field.key])
+        ? customValues[field.key]
+        : []
+
+      return (
+        <AppliedVouchersEditor
+          title={field.label}
+          currencySymbol={currencySymbol}
+          vouchers={currentVouchers}
+          onChange={nextVouchers => onCustomChange(field.key, nextVouchers)}
+        />
+      )
+    }
+
     const rawValue =
       field.target === 'core' ? coreValues[field.key] : customValues[field.key]
+    const displayValue =
+      Array.isArray(rawValue)
+        ? rawValue
+            .map(item =>
+              item && typeof item === 'object'
+                ? [
+                    item.voucherType || item.tipo_comprobante || item.tipo || '',
+                    item.voucherNumber || item.numero_comprobante || item.numero || '',
+                    item.appliedAmount ?? item.importe_imputado ?? item.importe
+                      ? `($${item.appliedAmount ?? item.importe_imputado ?? item.importe})`
+                      : ''
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || JSON.stringify(item)
+                : String(item ?? '')
+            )
+            .filter(Boolean)
+            .join('\n')
+        : rawValue && typeof rawValue === 'object'
+          ? JSON.stringify(rawValue)
+          : rawValue
     const setValue = (val: any) =>
       field.target === 'core' ? onCoreChange(field.key, val) : onCustomChange(field.key, val)
 
@@ -118,7 +156,7 @@ export const DynamicDocumentForm: React.FC<DynamicDocumentFormProps> = ({
         label={field.required ? `${field.label} *` : field.label}
         placeholder={field.placeholder}
         helperText={field.helperText}
-        value={rawValue ?? ''}
+        value={displayValue ?? ''}
         onChange={e => {
           const val = field.uppercase ? e.target.value.toUpperCase() : e.target.value
           setValue(val)

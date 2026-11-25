@@ -1,3 +1,5 @@
+import { DocumentBalanceSummary } from 'src/store/apps/documents'
+
 export interface ClientLinkedDocumentSummary {
   id: number
   originalName: string
@@ -102,6 +104,8 @@ export interface ClientDocumentItem {
   paymentStatus?: string
   summary?: string | null
   clientRole: ClientDocumentRole
+  linkedCount?: number
+  balanceSummary?: DocumentBalanceSummary
   createdAt: string
   updatedAt: string
 }
