@@ -16,26 +16,26 @@ interface DocumentQuotaBannerProps {
 export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota }) => {
   if (!quota || quota.isSuperAdmin) return null
 
-  const pagesMetric = quota.pages || quota.documents
-  const pagesFull =
-    !pagesMetric.unlimited &&
-    pagesMetric.max !== null &&
-    pagesMetric.current >= pagesMetric.max
+  const docsMetric = quota.documents || quota.pages
+  const docsFull =
+    !docsMetric.unlimited &&
+    docsMetric.max !== null &&
+    docsMetric.current >= docsMetric.max
 
   const storageFull =
     !quota.storageMb.unlimited &&
     quota.storageMb.max !== null &&
     quota.storageMb.current >= quota.storageMb.max
 
-  const isQuotaExhausted = pagesFull || storageFull
+  const isQuotaExhausted = docsFull || storageFull
 
   return (
     <Box sx={{ mb: 4 }}>
       {isQuotaExhausted && (
         <Alert severity='error' sx={{ mb: 3 }}>
-          Su compañía alcanzó el límite mensual de hojas/páginas o almacenamiento permitido por el{' '}
-          <strong>Plan {quota.plan?.name || 'Actual'}</strong>. El contador de hojas es continuo y no
-          disminuye al borrar archivos. Solicite una ampliación de plan al administrador.
+          Su compañía alcanzó el límite de archivos almacenados o espacio disponible en el{' '}
+          <strong>Plan {quota.plan?.name || 'Actual'}</strong>. Eliminá comprobantes antiguos o
+          solicitá una ampliación de plan para liberar lugar.
         </Alert>
       )}
 
@@ -45,21 +45,21 @@ export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota 
             <Grid item xs={12} md={3}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                 <Typography variant='caption' sx={{ color: 'text.secondary', fontWeight: 600 }}>
-                  CAPACIDAD DEL PLAN (HOJAS)
+                  CAPACIDAD DEL PLAN
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                   <Chip
                     size='small'
                     color={(quota.plan?.badgeColor || 'primary') as any}
                     label={quota.plan ? `Plan ${quota.plan.name}` : 'Plan Base'}
                     sx={{ fontWeight: 600 }}
                   />
-                  {quota.totalPagesUploaded !== undefined && quota.totalPagesUploaded > 0 && (
+                  {quota.totalDocumentsProcessed !== undefined && quota.totalDocumentsProcessed > 0 && (
                     <Chip
                       size='small'
                       variant='outlined'
                       color='default'
-                      label={`Total histórico: ${quota.totalPagesUploaded} hojas`}
+                      label={`Procesados: ${quota.totalDocumentsProcessed}`}
                     />
                   )}
                 </Box>
@@ -68,9 +68,9 @@ export const DocumentQuotaBanner: React.FC<DocumentQuotaBannerProps> = ({ quota 
 
             <Grid item xs={12} sm={6} md={4.5}>
               <QuotaProgressBar
-                label='Hojas / Páginas Escaneadas (Mes)'
-                current={pagesMetric.current}
-                max={pagesMetric.max}
+                label='Archivos Almacenados (Bóveda)'
+                current={docsMetric.current}
+                max={docsMetric.max}
               />
             </Grid>
 

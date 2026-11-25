@@ -40,7 +40,7 @@ export const CompanyPlanQuotaView: React.FC<CompanyPlanQuotaViewProps> = ({
           key={`${company.id}-${refreshTick}`}
           companyId={Number(company.id)}
           title={`Plan y Consumo de ${company.name}`}
-          subheader='Cuotas activas de usuarios, hojas/páginas escaneadas, espacio en disco y consultas mensuales a la IA'
+          subheader='Cuotas activas de usuarios, archivos almacenados, espacio en disco y documentos procesados'
         />
       </Grid>
 

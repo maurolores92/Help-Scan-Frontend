@@ -55,11 +55,11 @@ export const AdminDashboard = () => {
         <WelcomeCard user={user} quota={quota} loading={loading} />
       </Grid>
 
-      {/* 2. Fila con los 4 KPIs Principales Solicitados:
-          - Hojas escaneadas (Odómetro acumulado histórico permanente)
+      {/* 2. Fila con los KPIs principales y estado de canales (WhatsApp, Email, Telegram):
+          - Documentos procesados (Odómetro acumulado histórico permanente)
           - Usuarios creados
-          - Megas utilizados en server
-          - Impresoras y equipos funcionando por FTP
+          - Espacio en servidor y archivos guardados
+          - Impresoras FTP + estado de canales automáticos
       */}
       <ClientKpiCards quota={quota} loading={loading} />
     </Grid>

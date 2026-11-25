@@ -22,6 +22,20 @@ export interface DocumentProcessingBillingType {
   additionalCostArs: number
 }
 
+export interface CompanyChannelIntegrationStatusType {
+  enabledInPlan: boolean
+  configured: boolean
+  active: boolean
+  status?: string
+}
+
+export interface CompanyChannelsStatusType {
+  enabledModules: string[]
+  whatsapp: CompanyChannelIntegrationStatusType
+  email: CompanyChannelIntegrationStatusType
+  telegram: CompanyChannelIntegrationStatusType
+}
+
 export interface CompanyQuotaSummaryType {
   isSuperAdmin?: boolean
   companyId: number | null
@@ -42,6 +56,7 @@ export interface CompanyQuotaSummaryType {
   processingBilling?: DocumentProcessingBillingType
   activeDocumentsCount?: number
   activeFtpDevicesCount?: number
+  channels?: CompanyChannelsStatusType
 }
 
 export interface PlanType {

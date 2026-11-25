@@ -98,7 +98,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Icon icon='tabler:files' fontSize={19} />
-              <Typography variant='body2'>Archivos almacenados</Typography>
+              <Typography variant='body2'>Archivos almacenados en nube</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
               {renderLimitText(plan.maxDocuments ?? plan.maxPages ?? null, 'archivos')}
@@ -108,7 +108,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Icon icon='tabler:database' fontSize={19} />
-              <Typography variant='body2'>Storage en disco</Typography>
+              <Typography variant='body2'>Espacio en la nube</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
               {renderLimitText(
@@ -118,11 +118,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
               )}
             </Typography>
           </Box>
-
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Icon icon='tabler:file-dollar' fontSize={19} />
-              <Typography variant='body2'>Adicional doc. procesado</Typography>
+              <Typography variant='body2'>Valor por documento procesado</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600, color: Number(plan.pricePerProcessedDocumentArs || 0) > 0 ? 'primary.main' : 'text.secondary' }}>
               {Number(plan.pricePerProcessedDocumentArs || 0) > 0
@@ -130,7 +129,12 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
                 : 'Sin adicional'}
             </Typography>
           </Box>
-
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Icon icon='energy-icons:scanner-20-bold' fontSize={19} />
+              <Typography variant='body2'>Equipo HP Scanjet</Typography>
+            </Box>
+          </Box>
           <Box sx={{ mt: 1 }}>
             <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mb: 1 }}>
               Canales habilitados:
