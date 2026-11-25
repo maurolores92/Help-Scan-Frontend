@@ -4,6 +4,12 @@ import Typography from '@mui/material/Typography'
 import LinearProgress, { LinearProgressProps } from '@mui/material/LinearProgress'
 import Tooltip from '@mui/material/Tooltip'
 
+export const calcBinaryStorageMbFromFiles = (files: number | null | undefined): number | null => {
+  if (files === null || files === undefined || files <= 0) return null
+
+  return Math.max(1, Math.round((Number(files) / 1000) * 1024))
+}
+
 export const formatStorageMb = (mb: number): string => {
   if (mb >= 1024) {
     const gb = mb / 1024

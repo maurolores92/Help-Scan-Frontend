@@ -18,6 +18,7 @@ import { PlanExchangeConfigType, PlanType } from 'src/types/apps/planTypes'
 import CompanyModulesSelector from 'src/views/apps/companies/list/CompanyModulesSelector'
 import PlanQuotaLimitField from './components/PlanQuotaLimitField'
 import ExchangeRateModal from './components/ExchangeRateModal'
+import { calcBinaryStorageMbFromFiles, formatStorageMb } from 'src/components/common/QuotaProgressBar'
 import { usePlanForm } from './hooks/usePlanForm'
 
 interface PlanFormDrawerProps {
@@ -50,6 +51,8 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
   }, [open])
 
   const watchedPrice = Number(watch('priceMonthly') || 0)
+  const watchedMaxDocuments = watch('maxDocuments')
+  const autoStorageMb = calcBinaryStorageMbFromFiles(watchedMaxDocuments)
   const convertedPrice = exchangeConfig
     ? exchangeConfig.roundPrices
       ? Math.ceil(watchedPrice * Number(exchangeConfig.usdRate))
@@ -177,6 +180,7 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
             <PlanQuotaLimitField
               name='maxUsers'
               label='Máx. Usuarios'
+              helperText='Sesión única simultánea por cuenta'
               defaultNumericValue={10}
               control={control}
               errorMessage={errors.maxUsers?.message}
@@ -186,8 +190,8 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
           <Grid item xs={12} sm={6}>
             <PlanQuotaLimitField
               name='maxDocuments'
-              label='Máx. Hojas / Páginas'
-              helperText='Límite mensual acumulativo de hojas subidas'
+              label='Máx. Archivos Almacenados'
+              helperText='Límite de archivos guardados (libera cupo al eliminar)'
               defaultNumericValue={1000}
               control={control}
               errorMessage={errors.maxDocuments?.message}
@@ -195,25 +199,37 @@ export const PlanFormDrawer: React.FC<PlanFormDrawerProps> = ({ open, onClose, e
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <PlanQuotaLimitField
-              name='maxStorageMb'
-              label='Storage en Disco (MB)'
-              helperText='Ej: 2048 MB = 2 GB'
-              defaultNumericValue={5120}
-              control={control}
-              errorMessage={errors.maxStorageMb?.message}
+            <TextField
+              fullWidth
+              label='Storage en Disco (Solo Lectura)'
+              value={
+                autoStorageMb === null
+                  ? 'Ilimitado'
+                  : `${formatStorageMb(autoStorageMb)} (${autoStorageMb.toLocaleString('es-AR')} MB)`
+              }
+              helperText='Base binaria (1 GB = 1.024 MB • ~1 MB por archivo)'
+              InputProps={{ readOnly: true }}
             />
           </Grid>
 
           <Grid item xs={12} sm={6}>
-            <PlanQuotaLimitField
-              name='maxAiQueriesMonthly'
-              label='Extracción OCR / Mes'
-              helperText='0 deshabilita procesamiento OCR'
-              defaultNumericValue={500}
-              allowZero
+            <Controller
+              name='pricePerProcessedDocumentArs'
               control={control}
-              errorMessage={errors.maxAiQueriesMonthly?.message}
+              render={({ field }) => (
+                <TextField
+                  {...field}
+                  fullWidth
+                  type='number'
+                  inputProps={{ min: 0, step: '0.01' }}
+                  label='Precio por Doc. Procesado (ARS)'
+                  error={Boolean(errors.pricePerProcessedDocumentArs)}
+                  helperText={
+                    errors.pricePerProcessedDocumentArs?.message ||
+                    'Adicional al abono mensual (contador nunca se resta)'
+                  }
+                />
+              )}
             />
           </Grid>
 

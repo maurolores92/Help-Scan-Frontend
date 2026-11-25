@@ -10,7 +10,7 @@ import Divider from '@mui/material/Divider'
 import Tooltip from '@mui/material/Tooltip'
 import Icon from 'src/@core/components/icon'
 import { PlanType } from 'src/types/apps/planTypes'
-import { formatStorageMb } from 'src/components/common/QuotaProgressBar'
+import { calcBinaryStorageMbFromFiles, formatStorageMb } from 'src/components/common/QuotaProgressBar'
 
 interface PlanCardProps {
   plan: PlanType
@@ -98,10 +98,10 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
               <Icon icon='tabler:files' fontSize={19} />
-              <Typography variant='body2'>Hojas / Páginas</Typography>
+              <Typography variant='body2'>Archivos almacenados</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {renderLimitText(plan.maxPages ?? plan.maxDocuments, 'hojas')}
+              {renderLimitText(plan.maxDocuments ?? plan.maxPages ?? null, 'archivos')}
             </Typography>
           </Box>
 
@@ -111,17 +111,23 @@ export const PlanCard: React.FC<PlanCardProps> = ({ plan, onEdit, onDelete }) =>
               <Typography variant='body2'>Storage en disco</Typography>
             </Box>
             <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {renderLimitText(plan.maxStorageMb, 'MB', formatStorageMb)}
+              {renderLimitText(
+                calcBinaryStorageMbFromFiles(plan.maxDocuments ?? plan.maxPages) ?? plan.maxStorageMb,
+                'MB',
+                formatStorageMb
+              )}
             </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-              <Icon icon='tabler:cpu' fontSize={19} />
-              <Typography variant='body2'>Extracción OCR / mes</Typography>
+              <Icon icon='tabler:file-dollar' fontSize={19} />
+              <Typography variant='body2'>Adicional doc. procesado</Typography>
             </Box>
-            <Typography variant='body2' sx={{ fontWeight: 600 }}>
-              {renderLimitText(plan.maxAiQueriesMonthly, 'consultas')}
+            <Typography variant='body2' sx={{ fontWeight: 600, color: Number(plan.pricePerProcessedDocumentArs || 0) > 0 ? 'primary.main' : 'text.secondary' }}>
+              {Number(plan.pricePerProcessedDocumentArs || 0) > 0
+                ? `+ $ ${Number(plan.pricePerProcessedDocumentArs).toLocaleString('es-AR')} ARS / doc`
+                : 'Sin adicional'}
             </Typography>
           </Box>
 

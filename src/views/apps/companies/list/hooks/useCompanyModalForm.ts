@@ -5,6 +5,7 @@ import useApi from 'src/hooks/useApi'
 import apiConnector from 'src/services/api.service'
 import toast from 'react-hot-toast'
 import { PlanType } from 'src/types/apps/planTypes'
+import { calcBinaryStorageMbFromFiles } from 'src/components/common/QuotaProgressBar'
 import { companyModalSchema, DEFAULT_COMPANY_MODULES } from './companyModal.schema'
 
 export const useCompanyModalForm = (
@@ -110,13 +111,14 @@ export const useCompanyModalForm = (
 
   const onSubmit = async (data: any) => {
     try {
+      const customDocs = data.useCustomLimits ? data.maxDocuments : null
       const limitsPayload = {
         planId: data.planId ? Number(data.planId) : null,
         useCustomLimits: Boolean(data.useCustomLimits),
         maxUsers: data.useCustomLimits ? data.maxUsers : null,
-        maxDocuments: data.useCustomLimits ? data.maxDocuments : null,
-        maxStorageMb: data.useCustomLimits ? data.maxStorageMb : null,
-        maxAiQueriesMonthly: data.useCustomLimits ? data.maxAiQueriesMonthly : null
+        maxDocuments: customDocs,
+        maxStorageMb: data.useCustomLimits ? calcBinaryStorageMbFromFiles(customDocs) : null,
+        maxAiQueriesMonthly: null
       }
 
       if (isEdit) {

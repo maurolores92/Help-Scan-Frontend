@@ -68,12 +68,43 @@ export const NotificationProvider = ({ children }: Props) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null
     if (!token) return
 
+    let currentSessionId: string | null = null
+    try {
+      const payloadSegment = token.split('.')[1]
+      if (payloadSegment) {
+        const parsed = JSON.parse(atob(payloadSegment.replace(/-/g, '+').replace(/_/g, '/')))
+        currentSessionId = parsed?.sessionId || null
+      }
+    } catch {
+      currentSessionId = null
+    }
+
     // Conectar al namespace /notifications con el JWT
     const socket = io(`${getWsUrl()}/notifications`, {
       auth: { token },
       transports: ['websocket'],
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
+    })
+
+    socket.on('session:revoked', (data: { activeSessionId?: string; message?: string }) => {
+      if (data?.activeSessionId && currentSessionId && data.activeSessionId === currentSessionId) {
+        return
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('userData')
+        localStorage.removeItem('user')
+        localStorage.removeItem('role')
+        toast.error(
+          data?.message || 'Tu sesión se cerró porque se inició sesión desde otro dispositivo.',
+          { id: 'session-revoked' }
+        )
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
+        }
+      }
     })
 
     socket.on('connect', () => {

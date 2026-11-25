@@ -1,4 +1,5 @@
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { getApiBaseUrl } from 'src/utils/api-url';
 
 const repository = axios.create({
@@ -43,11 +44,33 @@ repository.interceptors.response.use(
     return response;
   },
   function (error) {
-    if (error.response?.status === 401 || error.response?.status === 403 || (error.response?.data && error.response.data?.message === 'Unauthenticated')) {
-      // store.dispatch('logout', { router, doRedirect: true });
-      console.error('Error de autenticación o permisos (401/403)');
+    const status = error.response?.status;
+    const message = String(error.response?.data?.message || '');
+    const requestUrl = String(error.config?.url || '');
+
+    if (
+      typeof window !== 'undefined' &&
+      status === 401 &&
+      !requestUrl.includes('/auth/login') &&
+      !requestUrl.includes('/auth/register')
+    ) {
+      const hasToken = Boolean(localStorage.getItem('accessToken'));
+      if (hasToken) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userData');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        if (message.includes('SESSION_REPLACED')) {
+          toast.error('Tu sesión se cerró porque se inició sesión desde otro dispositivo.', {
+            id: 'session-revoked',
+          });
+        }
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      }
     }
-    throw error;
     throw error;
   }
 );

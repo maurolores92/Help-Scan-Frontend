@@ -162,23 +162,23 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Icon icon='tabler:files' fontSize={20} />
                         <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                          Hojas / Páginas Escaneadas (Mes)
+                          Archivos Almacenados
                         </Typography>
                       </Box>
-                      {summary.totalPagesUploaded !== undefined && (
+                      {summary.activeDocumentsCount !== undefined && (
                         <Chip
                           size='small'
                           variant='outlined'
                           color='secondary'
-                          label={`Histórico: ${summary.totalPagesUploaded} hojas`}
+                          label={`En bóveda: ${summary.activeDocumentsCount}`}
                           sx={{ fontSize: '0.72rem' }}
                         />
                       )}
                     </Box>
                     <QuotaProgressBar
-                      label='Hojas acumuladas en el período'
-                      current={summary.pages?.current ?? summary.documents.current}
-                      max={summary.pages?.max ?? summary.documents.max}
+                      label='Archivos guardados actualmente (libera cupo al borrar)'
+                      current={summary.documents.current}
+                      max={summary.documents.max}
                     />
                   </Box>
                 </Grid>
@@ -192,7 +192,7 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                       </Typography>
                     </Box>
                     <QuotaProgressBar
-                      label='Espacio ocupado'
+                      label='Espacio ocupado (base binaria)'
                       current={summary.storageMb.current}
                       max={summary.storageMb.max}
                       formatValue={formatStorageMb}
@@ -204,7 +204,7 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
 
             {canSeeAiQuota && (
               <Grid item xs={12} sm={6}>
-                <Box sx={{ p: 3, borderRadius: 1.5, border: 1, borderColor: 'divider' }}>
+                <Box sx={{ p: 3, borderRadius: 1.5, border: 1, borderColor: 'divider', height: '100%' }}>
                   <Box
                     sx={{
                       display: 'flex',
@@ -214,28 +214,38 @@ export const TenantPlanUsageCard: React.FC<TenantPlanUsageCardProps> = ({
                     }}
                   >
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Icon icon='tabler:cpu' fontSize={20} />
+                      <Icon icon='tabler:file-dollar' fontSize={20} />
                       <Typography variant='body2' sx={{ fontWeight: 600 }}>
-                        Extracción OCR de Documentos
+                        Documentos Procesados (Adicional)
                       </Typography>
                     </Box>
-                    {summary.aiQueries.period && (
+                    {(summary.processingBilling?.period || summary.aiQueries.period) && (
                       <Typography variant='caption' sx={{ color: 'text.disabled' }}>
-                        Ciclo {summary.aiQueries.period}
+                        Ciclo {summary.processingBilling?.period || summary.aiQueries.period}
                       </Typography>
                     )}
                   </Box>
-                  <QuotaProgressBar
-                    label='Procesamiento OCR en el período'
-                    current={summary.aiQueries.current}
-                    max={summary.aiQueries.max}
-                  />
-                  <Typography
-                    variant='caption'
-                    sx={{ display: 'block', mt: 1.5, color: 'text.secondary' }}
-                  >
-                    Documentos digitalizados y procesados por OCR:{' '}
-                    <strong>{summary.aiQueries.aiDocumentsProcessed ?? 0}</strong>
+                  <Box sx={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', mb: 1 }}>
+                    <Typography variant='h5' sx={{ fontWeight: 700 }}>
+                      {summary.processingBilling?.processedCount ?? summary.aiQueries.aiDocumentsProcessed ?? 0}{' '}
+                      <Typography component='span' variant='body2' color='text.secondary'>
+                        procesados este mes
+                      </Typography>
+                    </Typography>
+                    {Number(summary.processingBilling?.unitPriceArs || 0) > 0 && (
+                      <Chip
+                        size='small'
+                        color='primary'
+                        variant='outlined'
+                        label={`+ $ ${Number(summary.processingBilling?.additionalCostArs || 0).toLocaleString('es-AR')} ARS`}
+                        sx={{ fontWeight: 700 }}
+                      />
+                    )}
+                  </Box>
+                  <Typography variant='caption' sx={{ display: 'block', color: 'text.secondary' }}>
+                    {Number(summary.processingBilling?.unitPriceArs || 0) > 0
+                      ? `Tarifa: $${Number(summary.processingBilling?.unitPriceArs || 0).toLocaleString('es-AR')} ARS por doc. • Histórico acumulado: ${summary.totalDocumentsProcessed ?? 0} (no se resta al eliminar)`
+                      : `Histórico acumulado: ${summary.totalDocumentsProcessed ?? 0} docs (no se resta al eliminar)`}
                   </Typography>
                 </Box>
               </Grid>

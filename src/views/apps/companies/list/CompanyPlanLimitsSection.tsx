@@ -7,9 +7,12 @@ import Typography from '@mui/material/Typography'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import Chip from '@mui/material/Chip'
-import { Control, Controller, UseFormSetValue } from 'react-hook-form'
+import { Control, Controller, UseFormSetValue, useWatch } from 'react-hook-form'
 import { PlanType } from 'src/types/apps/planTypes'
-import { formatStorageMb } from 'src/components/common/QuotaProgressBar'
+import {
+  calcBinaryStorageMbFromFiles,
+  formatStorageMb
+} from 'src/components/common/QuotaProgressBar'
 import PlanQuotaLimitField from 'src/views/apps/plans/components/PlanQuotaLimitField'
 
 interface CompanyPlanLimitsSectionProps {
@@ -30,6 +33,8 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
   setValue
 }) => {
   const activePlan = plans.find(p => p.id === Number(selectedPlanId)) || null
+  const watchedCustomDocs = useWatch({ control, name: 'maxDocuments' })
+  const customAutoStorageMb = calcBinaryStorageMbFromFiles(watchedCustomDocs)
 
   const handlePlanSelect = (newPlanId: number, onChange: (val: number) => void) => {
     onChange(newPlanId)
@@ -37,10 +42,10 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
     if (found) {
       setValue('enabledModules', found.includedModules)
       if (!useCustomLimits) {
+        const docsLimit = found.maxDocuments ?? found.maxPages ?? null
         setValue('maxUsers', found.maxUsers)
-        setValue('maxDocuments', found.maxPages ?? found.maxDocuments)
-        setValue('maxStorageMb', found.maxStorageMb)
-        setValue('maxAiQueriesMonthly', found.maxAiQueriesMonthly)
+        setValue('maxDocuments', docsLimit)
+        setValue('maxStorageMb', calcBinaryStorageMbFromFiles(docsLimit) ?? found.maxStorageMb)
       }
     }
   }
@@ -131,29 +136,38 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
                   size='small'
                   color='primary'
                   variant='outlined'
-                  label={`Hojas/Páginas: ${activePlan.maxPages ?? activePlan.maxDocuments ?? 'Ilimitado'}`}
+                  label={`Archivos: ${activePlan.maxDocuments ?? activePlan.maxPages ?? 'Ilimitado'}`}
                 />
                 <Chip
                   size='small'
                   color='primary'
                   variant='outlined'
                   label={`Storage: ${
-                    activePlan.maxStorageMb ? formatStorageMb(activePlan.maxStorageMb) : 'Ilimitado'
+                    (calcBinaryStorageMbFromFiles(activePlan.maxDocuments ?? activePlan.maxPages) ??
+                      activePlan.maxStorageMb)
+                      ? formatStorageMb(
+                          (calcBinaryStorageMbFromFiles(
+                            activePlan.maxDocuments ?? activePlan.maxPages
+                          ) ?? activePlan.maxStorageMb)!
+                        )
+                      : 'Ilimitado'
                   }`}
                 />
-                <Chip
-                  size='small'
-                  color='primary'
-                  variant='outlined'
-                  label={`IA/mes: ${activePlan.maxAiQueriesMonthly ?? 'Ilimitado'}`}
-                />
+                {Number(activePlan.pricePerProcessedDocumentArs || 0) > 0 && (
+                  <Chip
+                    size='small'
+                    color='info'
+                    variant='outlined'
+                    label={`+$${Number(activePlan.pricePerProcessedDocumentArs).toLocaleString('es-AR')} ARS / doc`}
+                  />
+                )}
               </Box>
             </Grid>
           )}
 
           {useCustomLimits && (
             <>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <PlanQuotaLimitField
                   name='maxUsers'
                   label='Máx. Usuarios'
@@ -162,33 +176,28 @@ export const CompanyPlanLimitsSection: React.FC<CompanyPlanLimitsSectionProps> =
                   errorMessage={errors?.maxUsers?.message}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid item xs={12} sm={6} md={4}>
                 <PlanQuotaLimitField
                   name='maxDocuments'
-                  label='Máx. Hojas / Páginas'
-                  helperText='Límite mensual acumulativo'
-                  defaultNumericValue={activePlan?.maxPages ?? activePlan?.maxDocuments ?? 1000}
+                  label='Máx. Archivos Almacenados'
+                  helperText='Libera cupo al eliminar'
+                  defaultNumericValue={activePlan?.maxDocuments ?? activePlan?.maxPages ?? 1000}
                   control={control}
                   errorMessage={errors?.maxDocuments?.message}
                 />
               </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <PlanQuotaLimitField
-                  name='maxStorageMb'
-                  label='Storage (MB)'
-                  defaultNumericValue={activePlan?.maxStorageMb ?? 5120}
-                  control={control}
-                  errorMessage={errors?.maxStorageMb?.message}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6} md={3}>
-                <PlanQuotaLimitField
-                  name='maxAiQueriesMonthly'
-                  label='Procesamiento OCR/mes'
-                  defaultNumericValue={activePlan?.maxAiQueriesMonthly ?? 500}
-                  allowZero
-                  control={control}
-                  errorMessage={errors?.maxAiQueriesMonthly?.message}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  label='Storage en Disco (Solo Lectura)'
+                  value={
+                    customAutoStorageMb === null
+                      ? 'Ilimitado'
+                      : `${formatStorageMb(customAutoStorageMb)} (${customAutoStorageMb.toLocaleString('es-AR')} MB)`
+                  }
+                  helperText='Base binaria (1.024 MB = 1 GB)'
+                  InputProps={{ readOnly: true }}
+                  sx={{ backgroundColor: 'background.paper' }}
                 />
               </Grid>
             </>

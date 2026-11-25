@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { AppDispatch } from 'src/store'
 import { createPlan, updatePlan } from 'src/store/apps/plans'
 import { PlanType } from 'src/types/apps/planTypes'
+import { calcBinaryStorageMbFromFiles } from 'src/components/common/QuotaProgressBar'
 
 const DEFAULT_MODULES = ['documents', 'ai_queries', 'users', 'roles', 'audit']
 
@@ -18,12 +19,16 @@ const planSchema = yup.object().shape({
     .matches(/^[a-z0-9-]+$/, 'Solo letras minúsculas, números y guiones'),
   description: yup.string().nullable().optional(),
   priceMonthly: yup.number().typeError('Ingrese un monto válido').min(0, 'Mínimo 0').required(),
+  pricePerProcessedDocumentArs: yup
+    .number()
+    .typeError('Ingrese un monto en pesos válido')
+    .min(0, 'Mínimo 0')
+    .default(0),
   currency: yup.string().oneOf(['USD', 'ARS']).default('USD'),
   maxUsers: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
   maxPages: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
   maxDocuments: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1'),
   maxStorageMb: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(1, 'Mínimo 1 MB'),
-  maxAiQueriesMonthly: yup.number().nullable().transform((v, o) => (o === '' || o === null ? null : v)).min(0, 'Mínimo 0'),
   includedModules: yup.array().of(yup.string().required()).min(1).required(),
   badgeColor: yup.string().required(),
   isDefault: yup.boolean().required(),
@@ -35,12 +40,12 @@ export interface PlanFormValues {
   slug: string
   description?: string | null
   priceMonthly: number
+  pricePerProcessedDocumentArs: number
   currency?: 'ARS' | 'USD'
   maxUsers: number | null
   maxPages?: number | null
   maxDocuments: number | null
   maxStorageMb: number | null
-  maxAiQueriesMonthly: number | null
   includedModules: string[]
   badgeColor: string
   isDefault: boolean
@@ -58,12 +63,12 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
       slug: '',
       description: '',
       priceMonthly: 49,
+      pricePerProcessedDocumentArs: 0,
       currency: 'USD',
       maxUsers: 10,
       maxPages: 1000,
       maxDocuments: 1000,
-      maxStorageMb: 5120,
-      maxAiQueriesMonthly: 500,
+      maxStorageMb: 1024,
       includedModules: DEFAULT_MODULES,
       badgeColor: 'primary',
       isDefault: false,
@@ -74,17 +79,18 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
   useEffect(() => {
     if (!open) return
     if (editPlan) {
+      const storedLimit = editPlan.maxDocuments ?? editPlan.maxPages
       form.reset({
         name: editPlan.name,
         slug: editPlan.slug,
         description: editPlan.description || '',
         priceMonthly: Number(editPlan.priceMonthly || 0),
+        pricePerProcessedDocumentArs: Number(editPlan.pricePerProcessedDocumentArs || 0),
         currency: (editPlan.currency as any) || 'USD',
         maxUsers: editPlan.maxUsers,
-        maxPages: editPlan.maxPages ?? editPlan.maxDocuments,
-        maxDocuments: editPlan.maxPages ?? editPlan.maxDocuments,
-        maxStorageMb: editPlan.maxStorageMb,
-        maxAiQueriesMonthly: editPlan.maxAiQueriesMonthly,
+        maxPages: storedLimit,
+        maxDocuments: storedLimit,
+        maxStorageMb: calcBinaryStorageMbFromFiles(storedLimit),
         includedModules: editPlan.includedModules || DEFAULT_MODULES,
         badgeColor: editPlan.badgeColor || 'primary',
         isDefault: Boolean(editPlan.isDefault),
@@ -96,12 +102,12 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
         slug: '',
         description: '',
         priceMonthly: 49,
+        pricePerProcessedDocumentArs: 0,
         currency: 'USD',
         maxUsers: 10,
         maxPages: 1000,
         maxDocuments: 1000,
-        maxStorageMb: 5120,
-        maxAiQueriesMonthly: 500,
+        maxStorageMb: 1024,
         includedModules: DEFAULT_MODULES,
         badgeColor: 'primary',
         isDefault: false,
@@ -125,10 +131,14 @@ export const usePlanForm = (open: boolean, editPlan: PlanType | null, onClose: (
 
   const onSubmit = async (values: PlanFormValues) => {
     try {
+      const resolvedFiles = values.maxDocuments ?? values.maxPages ?? null
       const payload = {
         ...values,
-        maxPages: values.maxPages ?? values.maxDocuments,
-        maxDocuments: values.maxPages ?? values.maxDocuments
+        pricePerProcessedDocumentArs: Number(values.pricePerProcessedDocumentArs || 0),
+        maxPages: resolvedFiles,
+        maxDocuments: resolvedFiles,
+        maxStorageMb: calcBinaryStorageMbFromFiles(resolvedFiles),
+        maxAiQueriesMonthly: null
       }
       if (isEdit && editPlan) {
         await dispatch(updatePlan({ id: editPlan.id, data: payload })).unwrap()

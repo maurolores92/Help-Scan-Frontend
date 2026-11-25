@@ -15,6 +15,13 @@ export interface AiQuotaMetricType extends QuotaMetricType {
   aiDocumentsProcessed?: number
 }
 
+export interface DocumentProcessingBillingType {
+  period: string
+  processedCount: number
+  unitPriceArs: number
+  additionalCostArs: number
+}
+
 export interface CompanyQuotaSummaryType {
   isSuperAdmin?: boolean
   companyId: number | null
@@ -31,6 +38,8 @@ export interface CompanyQuotaSummaryType {
   storageMb: StorageQuotaMetricType
   aiQueries: AiQuotaMetricType
   totalPagesUploaded?: number
+  totalDocumentsProcessed?: number
+  processingBilling?: DocumentProcessingBillingType
   activeDocumentsCount?: number
   activeFtpDevicesCount?: number
 }
@@ -41,6 +50,7 @@ export interface PlanType {
   slug: string
   description?: string | null
   priceMonthly: number
+  pricePerProcessedDocumentArs?: number
   currency?: 'ARS' | 'USD'
   priceInPesos?: number
   exchangeRateApplied?: number
@@ -49,7 +59,7 @@ export interface PlanType {
   maxPages?: number | null
   maxDocuments: number | null
   maxStorageMb: number | null
-  maxAiQueriesMonthly: number | null
+  maxAiQueriesMonthly?: number | null
   includedModules: string[]
   badgeColor: string
   isDefault: boolean
