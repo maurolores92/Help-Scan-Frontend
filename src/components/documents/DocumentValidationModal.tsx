@@ -335,7 +335,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
               it.precioFinal !== null && it.precioFinal !== undefined
                 ? it.precioFinal
                 : ((it as any).subtotal ?? null),
-            ivaPorcentaje: (it as any).ivaPorcentaje ?? null
+            ivaPorcentaje: (it as any).ivaPorcentaje ?? null,
+            bonificacion: (it as any).bonificacion ?? (it as any).descuento ?? null
           }))
         : []
     )
@@ -429,7 +430,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
         cantidad: optNum(it.cantidad) ?? null,
         precioSinIva: optNum(it.precioSinIva) ?? null,
         precioFinal: optNum(it.precioFinal) ?? null,
-        ivaPorcentaje: optNum(it.ivaPorcentaje) ?? null
+        ivaPorcentaje: optNum(it.ivaPorcentaje) ?? null,
+        bonificacion: it.bonificacion !== undefined && it.bonificacion !== '' ? it.bonificacion : null
       }))
 
     const payload: ValidateDocumentPayload = {

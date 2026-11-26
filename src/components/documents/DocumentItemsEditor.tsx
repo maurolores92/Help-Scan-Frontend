@@ -98,7 +98,17 @@ export const DocumentItemsEditor: React.FC<DocumentItemsEditorProps> = ({
                 onChange={e =>
                   onUpdateItem(idx, 'precioSinIva', e.target.value === '' ? null : Number(e.target.value))
                 }
-                sx={{ width: { xs: '48%', sm: 112 } }}
+                sx={{ width: { xs: '48%', sm: 108 } }}
+              />
+              <TextField
+                size='small'
+                label='Desc. %/$'
+                placeholder='0'
+                value={item.bonificacion ?? ''}
+                onChange={e =>
+                  onUpdateItem(idx, 'bonificacion', e.target.value === '' ? null : e.target.value)
+                }
+                sx={{ width: { xs: '48%', sm: 84 } }}
               />
               <TextField
                 size='small'
@@ -108,7 +118,7 @@ export const DocumentItemsEditor: React.FC<DocumentItemsEditorProps> = ({
                 onChange={e =>
                   onUpdateItem(idx, 'precioFinal', e.target.value === '' ? null : Number(e.target.value))
                 }
-                sx={{ width: { xs: '100%', sm: 112 } }}
+                sx={{ width: { xs: '100%', sm: 108 } }}
               />
               <IconButton size='small' color='error' onClick={() => onDeleteItem(idx)} sx={{ ml: 'auto' }}>
                 <Icon icon='tabler:trash' fontSize={18} />
