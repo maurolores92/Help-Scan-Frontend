@@ -11,7 +11,13 @@ import CustomAvatar from 'src/@core/components/mui/avatar'
 import { getInitials } from 'src/@core/utils/get-initials'
 import Icon from 'src/@core/components/icon'
 import StatusChip from 'src/components/common/StatusChip'
-import QuotaProgressBar, { formatStorageMb } from 'src/components/common/QuotaProgressBar'
+import {
+  formatArsCurrency,
+  formatFilesQuotaRatio,
+  formatStorageQuotaMbRatio,
+  formatUsersQuotaRatio,
+  resolveCompanyBillingDisplay
+} from 'src/utils/company-quota-format'
 
 interface RowOptionsProps {
   row: any
@@ -172,54 +178,70 @@ export const buildCompaniesColumns = (handlers: {
     }
   },
   {
-    flex: 0.16,
-    minWidth: 150,
+    flex: 0.13,
+    minWidth: 130,
     field: 'usersQuota',
     headerName: 'Cupo Usuarios',
-    renderCell: ({ row }) => {
-      const usersMetric = row.quotaSummary?.users
-
-      return (
-        <QuotaProgressBar
-          dense
-          current={usersMetric ? usersMetric.current : row.activeUsersCount ?? 0}
-          max={usersMetric ? usersMetric.max : row.maxUsers ?? 10}
-        />
-      )
-    }
+    renderCell: ({ row }) => (
+      <Typography variant='body2' sx={{ fontWeight: 600 }}>
+        {formatUsersQuotaRatio(row.quotaSummary, row.activeUsersCount ?? 0, row.maxUsers)}
+      </Typography>
+    )
   },
   {
-    flex: 0.18,
+    flex: 0.17,
     minWidth: 165,
     field: 'storageQuota',
-    headerName: 'Storage (MB/GB)',
+    headerName: 'Storage',
+    renderCell: ({ row }) => (
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        <Typography variant='body2' sx={{ fontWeight: 600 }}>
+          {formatStorageQuotaMbRatio(row.quotaSummary)}
+        </Typography>
+        <Typography variant='caption' color='text.secondary'>
+          Archivos: {formatFilesQuotaRatio(row.quotaSummary)}
+        </Typography>
+      </Box>
+    )
+  },
+  {
+    flex: 0.17,
+    minWidth: 170,
+    field: 'pricePerDoc',
+    headerName: 'Valor por Doc. Procesado',
     renderCell: ({ row }) => {
-      const storage = row.quotaSummary?.storageMb
+      const billing = resolveCompanyBillingDisplay(row)
 
       return (
-        <QuotaProgressBar
-          dense
-          current={storage?.current ?? 0}
-          max={storage ? storage.max : null}
-          formatValue={formatStorageMb}
-        />
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant='body2' sx={{ fontWeight: 600 }}>
+            {formatArsCurrency(billing.unitPriceArs)} / doc
+          </Typography>
+          <Typography variant='caption' color='text.secondary'>
+            {billing.processedCount} proc. ({formatArsCurrency(billing.additionalCostArs)})
+          </Typography>
+        </Box>
       )
     }
   },
   {
-    flex: 0.15,
-    minWidth: 140,
-    field: 'aiQuota',
-    headerName: 'OCR / Mes',
+    flex: 0.19,
+    minWidth: 185,
+    field: 'totalToCharge',
+    headerName: 'Total a Cobrar (Mes)',
     renderCell: ({ row }) => {
-      const ai = row.quotaSummary?.aiQueries
+      const billing = resolveCompanyBillingDisplay(row)
 
       return (
-        <QuotaProgressBar
-          dense
-          current={ai?.current ?? 0}
-          max={ai ? ai.max : null}
-        />
+        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+          <Typography variant='body2' color='primary.main' sx={{ fontWeight: 700 }}>
+            {formatArsCurrency(billing.totalToChargeArs)}
+          </Typography>
+          <Typography variant='caption' color='text.secondary'>
+            Plan {formatArsCurrency(billing.planBasePriceArs)} + Proc.{' '}
+            {formatArsCurrency(billing.additionalCostArs)}
+          </Typography>
+        </Box>
       )
     }
   },

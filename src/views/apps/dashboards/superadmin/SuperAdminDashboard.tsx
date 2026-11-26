@@ -8,7 +8,6 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import LinearProgress from '@mui/material/LinearProgress'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
@@ -18,16 +17,13 @@ import TableRow from '@mui/material/TableRow'
 import Icon from 'src/@core/components/icon'
 import apiConnector from 'src/services/api.service'
 import SuperAdminKpiCards, { SuperAdminPlatformMetrics } from './SuperAdminKpiCards'
-
-const formatQuotaLabel = (metric?: { current?: number; max?: number | null; unlimited?: boolean }, unit = '') => {
-  if (!metric) return '-'
-  const currentVal = unit === 'MB' ? Number(metric.current || 0).toFixed(1) : metric.current ?? 0
-  if (metric.unlimited || metric.max === null || metric.max === undefined) {
-    return `${currentVal}${unit ? ` ${unit}` : ''} / Ilimitado`
-  }
-
-  return `${currentVal} / ${metric.max}${unit ? ` ${unit}` : ''}`
-}
+import {
+  formatArsCurrency,
+  formatFilesQuotaRatio,
+  formatStorageQuotaMbRatio,
+  formatUsersQuotaRatio,
+  resolveCompanyBillingDisplay
+} from 'src/utils/company-quota-format'
 
 export const SuperAdminDashboard: React.FC = () => {
   const [companies, setCompanies] = useState<any[]>([])
@@ -154,7 +150,7 @@ export const SuperAdminDashboard: React.FC = () => {
         <Card>
           <CardHeader
             title='Planes y Consumo de Límites por Compañía'
-            subheader='Monitoreo de cupos de usuarios, documentos, almacenamiento y procesamiento IA de todas las empresas'
+            subheader='Resumen de cupos vigentes, valor por documento procesado y total mensual a cobrar por empresa'
           />
           <TableContainer>
             <Table size='small'>
@@ -162,17 +158,18 @@ export const SuperAdminDashboard: React.FC = () => {
                 <TableRow>
                   <TableCell>Empresa</TableCell>
                   <TableCell>Plan Asignado</TableCell>
-                  <TableCell>Usuarios</TableCell>
-                  <TableCell>Documentos</TableCell>
+                  <TableCell>Cupo de Usuarios</TableCell>
+                  <TableCell>Archivos</TableCell>
                   <TableCell>Storage</TableCell>
-                  <TableCell>OCR / Mes</TableCell>
+                  <TableCell>Valor por Doc. Procesado</TableCell>
+                  <TableCell>Total a Cobrar (Mes)</TableCell>
                   <TableCell align='right'>Acción</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {companies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} align='center' sx={{ py: 6 }}>
+                    <TableCell colSpan={8} align='center' sx={{ py: 6 }}>
                       <Typography variant='body2' color='text.secondary'>
                         No hay compañías registradas aún.
                       </Typography>
@@ -181,7 +178,7 @@ export const SuperAdminDashboard: React.FC = () => {
                 ) : (
                   companies.map(comp => {
                     const q = comp.quotaSummary
-                    const storagePct = Math.min(100, Number(q?.storageMb?.percentage || 0))
+                    const billing = resolveCompanyBillingDisplay(comp)
 
                     return (
                       <TableRow key={comp.id} hover>
@@ -200,20 +197,37 @@ export const SuperAdminDashboard: React.FC = () => {
                             color={(comp.plan?.badgeColor || 'primary') as any}
                           />
                         </TableCell>
-                        <TableCell>{formatQuotaLabel(q?.users)}</TableCell>
-                        <TableCell>{formatQuotaLabel(q?.documents)}</TableCell>
-                        <TableCell sx={{ minWidth: 160 }}>
-                          <Typography variant='caption' sx={{ display: 'block', mb: 0.5 }}>
-                            {formatQuotaLabel(q?.storageMb, 'MB')}
+                        <TableCell>
+                          <Typography variant='body2' fontWeight={600}>
+                            {formatUsersQuotaRatio(q, comp.activeUsersCount ?? 0, comp.maxUsers)}
                           </Typography>
-                          <LinearProgress
-                            variant='determinate'
-                            value={storagePct}
-                            color={storagePct >= 90 ? 'error' : storagePct >= 75 ? 'warning' : 'primary'}
-                            sx={{ height: 5, borderRadius: 2 }}
-                          />
                         </TableCell>
-                        <TableCell>{formatQuotaLabel(q?.aiQueries)}</TableCell>
+                        <TableCell>
+                          <Typography variant='body2'>
+                            {formatFilesQuotaRatio(q)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2' fontWeight={600}>
+                            {formatStorageQuotaMbRatio(q)}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2' fontWeight={600}>
+                            {formatArsCurrency(billing.unitPriceArs)} / doc
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            {billing.processedCount} proc. ({formatArsCurrency(billing.additionalCostArs)})
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant='body2' fontWeight={700} color='primary.main'>
+                            {formatArsCurrency(billing.totalToChargeArs)}
+                          </Typography>
+                          <Typography variant='caption' color='text.secondary'>
+                            Plan {formatArsCurrency(billing.planBasePriceArs)} + Proc. {formatArsCurrency(billing.additionalCostArs)}
+                          </Typography>
+                        </TableCell>
                         <TableCell align='right'>
                           <Button
                             size='small'
