@@ -28,6 +28,7 @@ import toast from 'react-hot-toast'
 import { useDispatch, useSelector } from 'react-redux'
 import Icon from 'src/@core/components/icon'
 import { AbilityContext } from 'src/layouts/components/acl/Can'
+import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import {
   createFtpDevice,
@@ -59,6 +60,7 @@ const getErrorMsg = (err: any, fallback: string) =>
 const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdminView = false }) => {
   const dispatch = useDispatch<AppDispatch>()
   const ability = useContext(AbilityContext)
+  const { socket } = useNotificationSocket()
   const { devices, serverInfo, quotaSummary, loading, submitting } = useSelector(
     (state: RootState) => state.ftpDevices
   )
@@ -81,6 +83,24 @@ const FtpDevicesView: React.FC<FtpDevicesViewProps> = ({ companyId, isSuperAdmin
   useEffect(() => {
     reloadDevices()
   }, [reloadDevices])
+
+  // Actualizar contadores y última actividad en vivo vía WebSocket al recibir escaneos FTP
+  useEffect(() => {
+    if (!socket) return
+
+    const handleFtpUpload = (payload: { companyId?: number }) => {
+      if (companyId && payload?.companyId && Number(payload.companyId) !== Number(companyId)) {
+        return
+      }
+      reloadDevices()
+    }
+
+    socket.on('documents:ftp-uploaded', handleFtpUpload)
+
+    return () => {
+      socket.off('documents:ftp-uploaded', handleFtpUpload)
+    }
+  }, [socket, companyId, reloadDevices])
 
   const handleCreate = async (payload: CreateFtpDevicePayload) => {
     try {

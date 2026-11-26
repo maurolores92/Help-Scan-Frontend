@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
+import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import {
   deleteDocument,
@@ -42,6 +43,7 @@ export const useDocumentsManager = () => {
   const latestNotification = useSelector(
     (state: RootState) => state.notifications.notifications[0]
   )
+  const { socket } = useNotificationSocket()
 
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -132,15 +134,11 @@ export const useDocumentsManager = () => {
     loadData()
   }, [loadData])
 
-  // Auto-refresco en vivo vía WebSocket al recibir eventos document.uploaded / document.processed / document.error
-  useEffect(() => {
-    if (!latestNotification || latestNotification.id === lastHandledNotifId.current) return
-    lastHandledNotifId.current = latestNotification.id
+  const realtimeRefreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-    if (latestNotification.type?.startsWith('document.')) {
-      loadData()
-
-      const notifDocId = Number(latestNotification.data?.documentId || 0)
+  const refreshOpenDocumentModal = useCallback(
+    (eventDocId?: number) => {
+      const notifDocId = Number(eventDocId || 0)
       const targetId =
         validatingDoc?.id && (!notifDocId || notifDocId === validatingDoc.id)
           ? validatingDoc.id
@@ -158,8 +156,58 @@ export const useDocumentsManager = () => {
           })
           .catch(() => null)
       }
+    },
+    [dispatch, validatingDoc?.id, previewDoc?.id]
+  )
+
+  const scheduleRealtimeRefresh = useCallback(
+    (eventDocId?: number) => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current)
+      }
+      realtimeRefreshTimerRef.current = setTimeout(() => {
+        realtimeRefreshTimerRef.current = null
+        loadData()
+        refreshOpenDocumentModal(eventDocId)
+      }, 150)
+    },
+    [loadData, refreshOpenDocumentModal]
+  )
+
+  useEffect(() => {
+    return () => {
+      if (realtimeRefreshTimerRef.current) {
+        clearTimeout(realtimeRefreshTimerRef.current)
+      }
     }
-  }, [latestNotification, loadData, dispatch, validatingDoc?.id, previewDoc?.id])
+  }, [])
+
+  // Refresco automático directo por WebSocket para escaneos FTP y cambios de cola OCR
+  useEffect(() => {
+    if (!socket) return
+
+    const handleRealtimeDocumentEvent = (payload: { documentId?: number }) => {
+      scheduleRealtimeRefresh(payload?.documentId)
+    }
+
+    socket.on('documents:ftp-uploaded', handleRealtimeDocumentEvent)
+    socket.on('documents:updated', handleRealtimeDocumentEvent)
+
+    return () => {
+      socket.off('documents:ftp-uploaded', handleRealtimeDocumentEvent)
+      socket.off('documents:updated', handleRealtimeDocumentEvent)
+    }
+  }, [socket, scheduleRealtimeRefresh])
+
+  // Auto-refresco en vivo vía WebSocket al recibir notificaciones document.uploaded / document.processed / document.error
+  useEffect(() => {
+    if (!latestNotification || latestNotification.id === lastHandledNotifId.current) return
+    lastHandledNotifId.current = latestNotification.id
+
+    if (latestNotification.type?.startsWith('document.')) {
+      scheduleRealtimeRefresh(Number(latestNotification.data?.documentId || 0))
+    }
+  }, [latestNotification, scheduleRealtimeRefresh])
 
   // Sincronizar datos de los modales si el documento abierto se actualiza en el listado
   useEffect(() => {
