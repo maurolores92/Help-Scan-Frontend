@@ -58,6 +58,15 @@ const isPlatformOnlyPermission = (upperPerm: string): boolean => {
   )
 }
 
+const normalizeRoleSlug = (role: unknown): string => {
+  if (typeof role === 'string') return role.trim().toLowerCase()
+  if (role && typeof role === 'object' && typeof (role as any).slug === 'string') {
+    return (role as any).slug.trim().toLowerCase()
+  }
+
+  return ''
+}
+
 /**
  * Define reglas CASL separando estrictamente al Super Admin de Plataforma de las Compañías (Tenants),
  * y aplicando restricciones según los módulos habilitados para la compañía (`enabledModules`).
@@ -69,8 +78,9 @@ const defineRulesFor = (
   enabledModules?: string[]
 ) => {
   const { can, cannot, rules } = new AbilityBuilder(AppAbility)
+  const normalizedRole = normalizeRoleSlug(role)
 
-  if (role === 'superadmin') {
+  if (normalizedRole === 'superadmin' || normalizedRole === 'super_admin' || normalizedRole === 'super admin') {
     can('read', 'dashboard')
     can('read', 'dashboards')
     can('manage', 'companies')
@@ -89,7 +99,7 @@ const defineRulesFor = (
 
   restrictSubjects(cannot, PLATFORM_ONLY_SUBJECTS)
 
-  if (role === 'admin' || role === 'company_admin') {
+  if (normalizedRole === 'admin' || normalizedRole === 'company_admin') {
     can('manage', 'all')
     can('read', 'admin_section')
     can('read', 'channels_section')

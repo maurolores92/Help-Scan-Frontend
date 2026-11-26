@@ -56,8 +56,13 @@ const AclGuard = (props: AclGuardProps) => {
     const enabledModules =
       companyObj && Array.isArray(companyObj.enabledModules) ? companyObj.enabledModules : undefined
 
+    const effectiveRole =
+      String(auth.user?.username || '').toLowerCase() === 'superadmin'
+        ? 'superadmin'
+        : auth.user.role
+
     ability = buildAbilityFor(
-      auth.user.role,
+      effectiveRole,
       aclAbilities.subject,
       auth.user.permissions,
       enabledModules

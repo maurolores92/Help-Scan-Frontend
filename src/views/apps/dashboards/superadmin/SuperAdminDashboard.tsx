@@ -128,6 +128,20 @@ export const SuperAdminDashboard: React.FC = () => {
                 >
                   Planes y Límites
                 </Button>
+                <Button
+                  component={Link}
+                  href='/security'
+                  variant='outlined'
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.7)',
+                    color: 'common.white',
+                    fontWeight: 600,
+                    '&:hover': { borderColor: 'common.white', backgroundColor: 'rgba(255,255,255,0.1)' }
+                  }}
+                  startIcon={<Icon icon='tabler:shield-check' />}
+                >
+                  Seguridad y Monitoreo
+                </Button>
               </Box>
             </Box>
           </CardContent>
