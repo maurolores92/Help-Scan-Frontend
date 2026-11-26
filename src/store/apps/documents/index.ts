@@ -263,6 +263,13 @@ export interface DocumentItem {
   extractionEngine?: string | null
   processedAt?: string | null
   userId?: number | null
+  user?: {
+    id: number
+    name?: string | null
+    lastName?: string | null
+    username?: string | null
+    email?: string | null
+  } | null
   uploadedByUserId?: number | null
   errorMessage?: string | null
   ftpDeviceId?: number | null
@@ -363,6 +370,7 @@ export interface FetchDocumentParams {
   documentLetter?: string
   recipientTaxId?: string
   clientId?: number
+  userId?: number
   dateFrom?: string
   dateTo?: string
   filterCompanyId?: number
@@ -397,6 +405,24 @@ export const fetchDocumentFacets = createAsyncThunk(
     const response: any = await apiConnector.get('/documents/facets', params)
 
     return response
+  }
+)
+
+export const fetchDocumentUploaders = createAsyncThunk(
+  'documents/fetchDocumentUploaders',
+  async () => {
+    const response = await apiConnector.get<
+      Array<{
+        id: number
+        name?: string | null
+        lastName?: string | null
+        username?: string | null
+        email?: string | null
+        status?: string
+      }>
+    >('/documents/uploaders')
+
+    return Array.isArray(response) ? response : []
   }
 )
 
@@ -527,6 +553,14 @@ export const appDocumentsSlice = createSlice({
     facets: [] as DocumentTypeFacet[],
     statusFacets: [] as DocumentTypeFacet[],
     departmentFacets: [] as DocumentTypeFacet[],
+    uploaders: [] as Array<{
+      id: number
+      name?: string | null
+      lastName?: string | null
+      username?: string | null
+      email?: string | null
+      status?: string
+    }>,
     formSchemas: [] as DocumentTypeFormDefinition[],
     loadingForms: false,
     total: 0,
@@ -578,6 +612,9 @@ export const appDocumentsSlice = createSlice({
         state.facets = action.payload?.documentTypes || []
         state.statusFacets = action.payload?.statuses || []
         state.departmentFacets = action.payload?.departments || []
+      })
+      .addCase(fetchDocumentUploaders.fulfilled, (state, action: any) => {
+        state.uploaders = Array.isArray(action.payload) ? action.payload : []
       })
       .addCase(fetchDocumentForms.pending, state => {
         state.loadingForms = true

@@ -6,9 +6,48 @@ export type EmailSyncStatus = 'IDLE' | 'OK' | 'ERROR'
 
 export type EmailMessageStatus = 'PROCESSED' | 'SYNTHESIZED_BODY' | 'SKIPPED' | 'ERROR'
 
+export interface ChannelUserRef {
+  id: number
+  name?: string | null
+  lastName?: string | null
+  username?: string | null
+  email?: string | null
+  status?: string
+  isAdmin?: boolean
+}
+
+export interface CompanyUserChannelOverviewItem extends ChannelUserRef {
+  channels: {
+    email: {
+      id: number
+      userId: number
+      emailUser: string
+      provider: EmailProviderType
+      isActive: boolean
+      lastSyncStatus: EmailSyncStatus
+    } | null
+    whatsapp: {
+      id: number
+      userId: number
+      connectionStatus: WhatsappConnectionStatus
+      connectedPhone: string | null
+      isActive: boolean
+    } | null
+    telegram: {
+      id: number
+      userId: number
+      botUsername: string | null
+      isActive: boolean
+      lastSyncStatus: TelegramSyncStatus
+    } | null
+  }
+}
+
 export interface CompanyEmailChannelItem {
   id: number
   companyId: number
+  userId?: number | null
+  user?: ChannelUserRef | null
   provider: EmailProviderType
   host: string
   port: number
@@ -68,6 +107,8 @@ export interface EmailMessageItem {
   id: number
   companyId: number
   channelId: number | null
+  userId?: number | null
+  user?: ChannelUserRef | null
   messageId: string
   senderName: string | null
   senderEmail: string
@@ -125,6 +166,8 @@ export type WhatsappMessageStatus = 'PROCESSED' | 'SKIPPED' | 'REJECTED_SENDER' 
 export interface CompanyWhatsappChannelItem {
   id: number
   companyId: number
+  userId?: number | null
+  user?: ChannelUserRef | null
   sessionKey: string
   connectionStatus: WhatsappConnectionStatus
   connectedPhone: string | null
@@ -147,6 +190,8 @@ export interface CompanyWhatsappChannelItem {
 
 export interface WhatsappRuntimeSnapshot {
   companyId: number
+  channelId?: number
+  userId?: number | null
   connectionStatus: WhatsappConnectionStatus
   qrDataUrl: string | null
   connectedPhone: string | null
@@ -175,6 +220,8 @@ export interface WhatsappMessageItem {
   id: number
   companyId: number
   channelId: number | null
+  userId?: number | null
+  user?: ChannelUserRef | null
   externalMessageId: string
   senderPhone: string
   senderName: string | null
@@ -212,6 +259,8 @@ export type TelegramMessageStatus = 'PROCESSED' | 'SKIPPED' | 'REJECTED_SENDER' 
 export interface CompanyTelegramChannelItem {
   id: number
   companyId: number
+  userId?: number | null
+  user?: ChannelUserRef | null
   botUsername: string | null
   botDisplayName: string | null
   hasBotToken: boolean
@@ -247,6 +296,8 @@ export interface TelegramMessageItem {
   id: number
   companyId: number
   channelId: number | null
+  userId?: number | null
+  user?: ChannelUserRef | null
   externalMessageId: string
   chatId: string
   senderUsername: string | null

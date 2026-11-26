@@ -14,8 +14,10 @@ import Typography from '@mui/material/Typography'
 import CircularProgress from '@mui/material/CircularProgress'
 import Icon from 'src/@core/components/icon'
 import SyncFtpButton from 'src/components/documents/SyncFtpButton'
+import InboxUserFilterSelect from 'src/components/channels/InboxUserFilterSelect'
 import { useAuth } from 'src/hooks/useAuth'
 import { DocumentExportFormat, DocumentTypeFacet } from 'src/store/apps/documents'
+import { ChannelUserRef } from 'src/types/apps/channelTypes'
 
 interface DocumentFilterToolbarProps {
   search: string
@@ -31,10 +33,11 @@ interface DocumentFilterToolbarProps {
   onDateToChange: (value: string) => void
   status?: string
   onStatusChange?: (value: string) => void
-  paymentFilter?: string
-  onPaymentFilterChange?: (value: string) => void
   source: string
   onSourceChange: (value: string) => void
+  userId?: number | ''
+  onUserIdChange?: (value: number | '') => void
+  uploaders?: ChannelUserRef[]
   onResetFilters: () => void
   hasActiveFilters: boolean
   onToggleUpload: () => void
@@ -82,10 +85,11 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
   onDateFromChange,
   dateTo,
   onDateToChange,
-  paymentFilter = '',
-  onPaymentFilterChange,
   source,
   onSourceChange,
+  userId = '',
+  onUserIdChange,
+  uploaders = [],
   onResetFilters,
   hasActiveFilters,
   onToggleUpload,
@@ -290,7 +294,7 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
         </Box>
       </Box>
 
-      {/* Filtros secundarios: N° O.C./Referencia, Estado Pago, Origen, Rango de Fechas */}
+      {/* Filtros secundarios: N° O.C./Referencia, Origen, Usuario, Rango de Fechas */}
       <Grid container spacing={2} alignItems='center'>
         <Grid item xs={12} sm={6} md={2.5}>
           <TextField
@@ -317,26 +321,6 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md={2.5}>
-          <TextField
-            select
-            fullWidth
-            size='small'
-            label='Pago / Vencimiento'
-            value={paymentFilter}
-            onChange={e => onPaymentFilterChange?.(e.target.value)}
-          >
-            <MenuItem value=''>Todos los estados</MenuItem>
-            <MenuItem value='PENDING'>Pendiente de pago</MenuItem>
-            <MenuItem value='PARTIALLY_PAID'>Pagado parcial</MenuItem>
-            <MenuItem value='SCHEDULED'>Programado</MenuItem>
-            <MenuItem value='PAID'>Pagado</MenuItem>
-            <MenuItem value='OVERDUE'>Vencidos</MenuItem>
-            <MenuItem value='DUE_SOON'>Por vencer (5 días)</MenuItem>
-            <MenuItem value='NOT_APPLICABLE'>No aplica</MenuItem>
-          </TextField>
-        </Grid>
-
         <Grid item xs={12} sm={6} md={2}>
           <TextField
             select
@@ -353,6 +337,17 @@ export const DocumentFilterToolbar: React.FC<DocumentFilterToolbarProps> = ({
             <MenuItem value='WHATSAPP'>WhatsApp Business</MenuItem>
             <MenuItem value='TELEGRAM'>Telegram Bot</MenuItem>
           </TextField>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2.5}>
+          <InboxUserFilterSelect
+            fullWidth
+            adminOnly={false}
+            label='Usuario'
+            usersList={uploaders}
+            value={userId}
+            onChange={val => onUserIdChange?.(val)}
+          />
         </Grid>
 
         <Grid item xs={6} sm={3} md={2}>

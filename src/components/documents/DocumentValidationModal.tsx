@@ -14,8 +14,6 @@ import CircularProgress from '@mui/material/CircularProgress'
 import IconButton from '@mui/material/IconButton'
 import Alert from '@mui/material/Alert'
 import Chip from '@mui/material/Chip'
-import Tab from '@mui/material/Tab'
-import Tabs from '@mui/material/Tabs'
 import Icon from 'src/@core/components/icon'
 import toast from 'react-hot-toast'
 import apiConnector from 'src/services/api.service'
@@ -30,7 +28,6 @@ import {
   ValidateDocumentPayload
 } from 'src/store/apps/documents'
 import DynamicDocumentForm from './DynamicDocumentForm'
-import DocumentLinksPanel from './DocumentLinksPanel'
 
 interface DocumentValidationModalProps {
   open: boolean
@@ -41,7 +38,6 @@ interface DocumentValidationModalProps {
   isValidating?: boolean
   onReprocess?: (doc: DocumentItem) => Promise<void>
   reprocessing?: boolean
-  onLinksUpdated?: () => void
 }
 
 const resolveSchemaByRawType = (
@@ -238,8 +234,7 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   onReject,
   isValidating = false,
   onReprocess,
-  reprocessing = false,
-  onLinksUpdated
+  reprocessing = false
 }) => {
   const dispatch = useDispatch<AppDispatch>()
   const { formSchemas, loadingForms } = useSelector((state: RootState) => state.documents)
@@ -249,8 +244,6 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   const [rejecting, setRejecting] = useState<boolean>(false)
   const [rejectReason, setRejectReason] = useState<string>('')
   const [originEmailOpen, setOriginEmailOpen] = useState<boolean>(false)
-  const [rightTab, setRightTab] = useState<'form' | 'links'>('form')
-  const [linksCount, setLinksCount] = useState<number>(0)
 
   const [documentType, setDocumentType] = useState<string>('factura')
   const [coreValues, setCoreValues] = useState<Record<string, any>>({})
@@ -266,7 +259,6 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
   useEffect(() => {
     if (!doc) return
 
-    setRightTab('form')
     const matchedSchema = resolveSchemaByRawType(
       formSchemas,
       doc.formRecord?.documentType || doc.documentType
@@ -623,34 +615,8 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
               md={6}
               sx={{ height: '100%', overflowY: 'auto', p: 3, backgroundColor: 'background.paper' }}
             >
-              <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                <Tabs value={rightTab} onChange={(_e, val) => setRightTab(val)}>
-                  <Tab
-                    value='form'
-                    icon={<Icon icon='tabler:forms' fontSize={17} />}
-                    iconPosition='start'
-                    label='Formulario de Validación'
-                    sx={{ minHeight: 42, textTransform: 'none', fontWeight: 600 }}
-                  />
-                  <Tab
-                    value='links'
-                    icon={<Icon icon='tabler:link' fontSize={17} />}
-                    iconPosition='start'
-                    label={`Vínculos y Saldo (${linksCount})`}
-                    sx={{ minHeight: 42, textTransform: 'none', fontWeight: 600 }}
-                  />
-                </Tabs>
-              </Box>
-
-              {rightTab === 'links' ? (
-                <DocumentLinksPanel
-                  document={doc}
-                  onLinksChanged={onLinksUpdated}
-                  onCountChange={setLinksCount}
-                />
-              ) : (
-                <>
-                  {rejecting ? (
+              <>
+                {rejecting ? (
                 <Alert severity='error' sx={{ mb: 2.5 }}>
                   <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 1 }}>
                     Rechazar Documento
@@ -758,8 +724,7 @@ export const DocumentValidationModal: React.FC<DocumentValidationModalProps> = (
                   No se pudieron cargar las plantillas de formularios. Reintentá en unos segundos.
                 </Alert>
               )}
-                </>
-              )}
+              </>
             </Grid>
           </Grid>
         </DialogContent>

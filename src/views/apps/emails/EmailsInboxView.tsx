@@ -18,7 +18,12 @@ import {
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
+import { useAuth } from 'src/hooks/useAuth'
 import { useNotificationSocket } from 'src/context/NotificationContext'
+import InboxUserFilterSelect, {
+  formatChannelUserName,
+  isChannelCompanyAdmin
+} from 'src/components/channels/InboxUserFilterSelect'
 import { AppDispatch, RootState } from 'src/store'
 import {
   fetchEmailMessages,
@@ -39,6 +44,8 @@ const STATUS_BADGE: Record<
 
 const EmailsInboxView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const { user } = useAuth()
+  const isAdmin = isChannelCompanyAdmin(user)
   const { socket } = useNotificationSocket()
   const { emails, emailsTotal, emailsStats, loadingEmails, syncing } = useSelector(
     (state: RootState) => state.channels
@@ -47,6 +54,7 @@ const EmailsInboxView: React.FC = () => {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [userIdFilter, setUserIdFilter] = useState<number | ''>('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
   const [viewerEmailId, setViewerEmailId] = useState<number | null>(null)
@@ -65,11 +73,12 @@ const EmailsInboxView: React.FC = () => {
       fetchEmailMessages({
         search: debouncedSearch || undefined,
         status: statusFilter || undefined,
+        userId: userIdFilter || undefined,
         page: page + 1,
         limit: pageSize
       })
     )
-  }, [dispatch, debouncedSearch, statusFilter, page, pageSize])
+  }, [dispatch, debouncedSearch, statusFilter, userIdFilter, page, pageSize])
 
   useEffect(() => {
     loadEmails()
@@ -216,6 +225,23 @@ const EmailsInboxView: React.FC = () => {
           </Typography>
         )
     },
+    ...(isAdmin
+      ? [
+          {
+            field: 'userId',
+            headerName: 'Usuario',
+            minWidth: 165,
+            renderCell: ({ row }: { row: EmailMessageItem }) => (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, overflow: 'hidden' }}>
+                <Icon icon='tabler:user' fontSize={15} />
+                <Typography variant='caption' noWrap sx={{ fontWeight: 500 }}>
+                  {formatChannelUserName(row.user)}
+                </Typography>
+              </Box>
+            )
+          } as GridColDef<EmailMessageItem>
+        ]
+      : []),
     {
       field: 'actions',
       headerName: 'Acciones',
@@ -361,7 +387,7 @@ const EmailsInboxView: React.FC = () => {
             >
               <TextField
                 size='small'
-                sx={{ minWidth: 280, flexGrow: 1, maxWidth: 420 }}
+                sx={{ minWidth: 260, flexGrow: 1, maxWidth: 380 }}
                 placeholder='Buscar por remitente o asunto...'
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
@@ -371,6 +397,14 @@ const EmailsInboxView: React.FC = () => {
                       <Icon icon='tabler:search' fontSize={18} />
                     </InputAdornment>
                   )
+                }}
+              />
+
+              <InboxUserFilterSelect
+                value={userIdFilter}
+                onChange={val => {
+                  setUserIdFilter(val)
+                  setPage(0)
                 }}
               />
 

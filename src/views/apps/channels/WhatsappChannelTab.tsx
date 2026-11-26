@@ -20,6 +20,7 @@ import {
 } from '@mui/material'
 import { alpha } from '@mui/material/styles'
 import Icon from 'src/@core/components/icon'
+import { useAuth } from 'src/hooks/useAuth'
 import { useNotificationSocket } from 'src/context/NotificationContext'
 import { AppDispatch, RootState } from 'src/store'
 import {
@@ -50,8 +51,17 @@ const STATUS_META: Record<
   ERROR: { label: 'Error de conexión', color: 'error' }
 }
 
-const WhatsappChannelTab: React.FC = () => {
+interface WhatsappChannelTabProps {
+  targetUserId?: number
+  readOnly?: boolean
+}
+
+const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
+  targetUserId,
+  readOnly = false
+}) => {
   const dispatch = useDispatch<AppDispatch>()
+  const { user } = useAuth()
   const { socket } = useNotificationSocket()
   const {
     whatsappChannel,
@@ -74,8 +84,8 @@ const WhatsappChannelTab: React.FC = () => {
   const [processImages, setProcessImages] = useState(true)
 
   useEffect(() => {
-    dispatch(fetchWhatsappChannelConfig())
-  }, [dispatch])
+    dispatch(fetchWhatsappChannelConfig(targetUserId))
+  }, [dispatch, targetUserId])
 
   useEffect(() => {
     if (whatsappChannel) {
@@ -87,14 +97,26 @@ const WhatsappChannelTab: React.FC = () => {
       setAllowedGroups(Array.isArray(whatsappChannel.allowedGroups) ? whatsappChannel.allowedGroups : [])
       setIsActive(whatsappChannel.isActive)
       setProcessImages(whatsappChannel.processImages)
+    } else {
+      setSenderPolicy('ALL')
+      setAllowedPhones([])
+      setGroupPolicy('IGNORE')
+      setAllowedGroups([])
+      setIsActive(true)
+      setProcessImages(true)
     }
-  }, [whatsappChannel])
+  }, [whatsappChannel, targetUserId])
+
+  const effectiveOwnerUserId = targetUserId || Number(user?.id) || 0
 
   // Suscripción WebSocket en tiempo real para QR y estado de conexión
   useEffect(() => {
     if (!socket) return
 
     const handleRealtime = (snapshot: WhatsappRuntimeSnapshot) => {
+      if (snapshot.userId && effectiveOwnerUserId && Number(snapshot.userId) !== effectiveOwnerUserId) {
+        return
+      }
       dispatch(applyWhatsappRealtimeStatus(snapshot))
       if (snapshot.connectionStatus === 'CONNECTED') {
         toast.success('¡WhatsApp conectado correctamente!')
@@ -106,7 +128,7 @@ const WhatsappChannelTab: React.FC = () => {
     return () => {
       socket.off('whatsapp:status', handleRealtime)
     }
-  }, [socket, dispatch])
+  }, [socket, dispatch, effectiveOwnerUserId])
 
   const currentStatus: WhatsappConnectionStatus =
     whatsappRuntime?.connectionStatus || whatsappChannel?.connectionStatus || 'DISCONNECTED'
@@ -116,9 +138,9 @@ const WhatsappChannelTab: React.FC = () => {
 
   useEffect(() => {
     if (currentStatus === 'CONNECTED' && groupPolicy === 'WHITELIST') {
-      dispatch(fetchWhatsappGroups())
+      dispatch(fetchWhatsappGroups(targetUserId))
     }
-  }, [currentStatus, groupPolicy, dispatch])
+  }, [currentStatus, groupPolicy, dispatch, targetUserId])
 
   // Polling suave mientras espera QR o está conectando (respaldo por si el socket tarda)
   useEffect(() => {
@@ -127,15 +149,16 @@ const WhatsappChannelTab: React.FC = () => {
     }
 
     const timer = setInterval(() => {
-      dispatch(fetchWhatsappChannelConfig())
+      dispatch(fetchWhatsappChannelConfig(targetUserId))
     }, 3000)
 
     return () => clearInterval(timer)
-  }, [currentStatus, dispatch])
+  }, [currentStatus, dispatch, targetUserId])
 
   const handleConnectQr = async () => {
+    if (readOnly) return
     try {
-      await dispatch(connectWhatsappQr()).unwrap()
+      await dispatch(connectWhatsappQr(targetUserId)).unwrap()
       toast.success('Código QR solicitado. Escanealo desde tu WhatsApp.')
     } catch (err: any) {
       toast.error(err?.message || 'No se pudo iniciar la sesión de WhatsApp')
@@ -143,8 +166,9 @@ const WhatsappChannelTab: React.FC = () => {
   }
 
   const handleDisconnect = async () => {
+    if (readOnly) return
     try {
-      await dispatch(disconnectWhatsappSession()).unwrap()
+      await dispatch(disconnectWhatsappSession(targetUserId)).unwrap()
       toast.success('Sesión de WhatsApp desconectada')
     } catch (err: any) {
       toast.error(err?.message || 'Error al desconectar WhatsApp')
@@ -170,10 +194,12 @@ const WhatsappChannelTab: React.FC = () => {
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (readOnly) return
 
     try {
       await dispatch(
         saveWhatsappChannelSettings({
+          targetUserId,
           senderPolicy,
           allowedPhones,
           ignoreGroups: groupPolicy === 'IGNORE',
@@ -266,7 +292,7 @@ const WhatsappChannelTab: React.FC = () => {
                 <Button
                   variant='outlined'
                   color='error'
-                  disabled={disconnectingWhatsapp}
+                  disabled={disconnectingWhatsapp || readOnly}
                   onClick={handleDisconnect}
                   startIcon={
                     disconnectingWhatsapp ? (
@@ -282,7 +308,7 @@ const WhatsappChannelTab: React.FC = () => {
                 <Button
                   variant='contained'
                   color='success'
-                  disabled={connectingWhatsapp}
+                  disabled={connectingWhatsapp || readOnly}
                   onClick={handleConnectQr}
                   startIcon={
                     connectingWhatsapp ? (
@@ -528,7 +554,7 @@ const WhatsappChannelTab: React.FC = () => {
                       loading={loadingWhatsappGroups}
                       availableGroups={whatsappGroups}
                       selectedGroups={allowedGroups}
-                      onRefreshGroups={() => dispatch(fetchWhatsappGroups())}
+                      onRefreshGroups={() => dispatch(fetchWhatsappGroups(targetUserId))}
                       onChange={setAllowedGroups}
                     />
                   </Grid>
@@ -565,7 +591,7 @@ const WhatsappChannelTab: React.FC = () => {
                     type='submit'
                     variant='contained'
                     color='primary'
-                    disabled={savingWhatsappConfig}
+                    disabled={savingWhatsappConfig || readOnly}
                     startIcon={
                       savingWhatsappConfig ? (
                         <CircularProgress size={16} color='inherit' />

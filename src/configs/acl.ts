@@ -165,6 +165,21 @@ const defineRulesFor = (
       can('read', 'channels')
       can('read', 'channels_section')
     }
+    if (permission === 'MANAGE_OWN_EMAIL') {
+      can('read', 'channels')
+      can('manage', 'own_email_channel')
+      can('read', 'channels_section')
+    }
+    if (permission === 'MANAGE_OWN_WHATSAPP') {
+      can('read', 'channels')
+      can('manage', 'own_whatsapp_channel')
+      can('read', 'channels_section')
+    }
+    if (permission === 'MANAGE_OWN_TELEGRAM') {
+      can('read', 'channels')
+      can('manage', 'own_telegram_channel')
+      can('read', 'channels_section')
+    }
     if (permission === 'VIEW_FTP_DEVICES') {
       can('read', 'ftp_devices')
       can('read', 'channels_section')

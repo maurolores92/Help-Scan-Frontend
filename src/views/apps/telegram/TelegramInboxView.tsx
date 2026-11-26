@@ -15,7 +15,12 @@ import {
 } from '@mui/material'
 import { DataGrid, GridColDef } from '@mui/x-data-grid'
 import Icon from 'src/@core/components/icon'
+import { useAuth } from 'src/hooks/useAuth'
 import { useNotificationSocket } from 'src/context/NotificationContext'
+import InboxUserFilterSelect, {
+  formatChannelUserName,
+  isChannelCompanyAdmin
+} from 'src/components/channels/InboxUserFilterSelect'
 import { AppDispatch, RootState } from 'src/store'
 import { fetchTelegramMessages } from 'src/store/apps/channels'
 import { TelegramMessageItem, TelegramMessageStatus } from 'src/types/apps/channelTypes'
@@ -32,6 +37,8 @@ const STATUS_BADGE: Record<
 
 const TelegramInboxView: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
+  const { user } = useAuth()
+  const isAdmin = isChannelCompanyAdmin(user)
   const { socket } = useNotificationSocket()
   const {
     telegramMessages,
@@ -43,6 +50,7 @@ const TelegramInboxView: React.FC = () => {
   const [searchInput, setSearchInput] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('')
+  const [userIdFilter, setUserIdFilter] = useState<number | ''>('')
   const [page, setPage] = useState(0)
   const [pageSize, setPageSize] = useState(25)
 
@@ -60,11 +68,12 @@ const TelegramInboxView: React.FC = () => {
       fetchTelegramMessages({
         search: debouncedSearch || undefined,
         status: statusFilter || undefined,
+        userId: userIdFilter || undefined,
         page: page + 1,
         limit: pageSize
       })
     )
-  }, [dispatch, debouncedSearch, statusFilter, page, pageSize])
+  }, [dispatch, debouncedSearch, statusFilter, userIdFilter, page, pageSize])
 
   useEffect(() => {
     loadMessages()
@@ -181,6 +190,23 @@ const TelegramInboxView: React.FC = () => {
         return <Chip size='small' label={meta.label} color={meta.color} />
       }
     },
+    ...(isAdmin
+      ? [
+          {
+            field: 'userId',
+            headerName: 'Usuario',
+            minWidth: 165,
+            renderCell: ({ row }: { row: TelegramMessageItem }) => (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, overflow: 'hidden' }}>
+                <Icon icon='tabler:user' fontSize={15} />
+                <Typography variant='caption' noWrap sx={{ fontWeight: 500 }}>
+                  {formatChannelUserName(row.user)}
+                </Typography>
+              </Box>
+            )
+          } as GridColDef<TelegramMessageItem>
+        ]
+      : []),
     {
       field: 'document',
       headerName: 'Documento PDF',
@@ -329,7 +355,7 @@ const TelegramInboxView: React.FC = () => {
             >
               <TextField
                 size='small'
-                sx={{ minWidth: 280, flexGrow: 1, maxWidth: 420 }}
+                sx={{ minWidth: 260, flexGrow: 1, maxWidth: 380 }}
                 placeholder='Buscar por chat ID, @usuario, nombre o archivo...'
                 value={searchInput}
                 onChange={e => setSearchInput(e.target.value)}
@@ -339,6 +365,14 @@ const TelegramInboxView: React.FC = () => {
                       <Icon icon='tabler:search' fontSize={18} />
                     </InputAdornment>
                   )
+                }}
+              />
+
+              <InboxUserFilterSelect
+                value={userIdFilter}
+                onChange={val => {
+                  setUserIdFilter(val)
+                  setPage(0)
                 }}
               />
 

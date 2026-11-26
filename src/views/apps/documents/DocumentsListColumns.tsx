@@ -40,7 +40,6 @@ export const buildDocumentsColumns = (handlers: {
   onPreview: (doc: DocumentItem) => void
   onValidate: (doc: DocumentItem) => void
   onDelete: (doc: DocumentItem) => void
-  onPaymentStatus?: (doc: DocumentItem) => void
 }): GridColDef[] => [
     {
       field: 'documentDate',
@@ -80,14 +79,6 @@ export const buildDocumentsColumns = (handlers: {
               <Typography variant='caption' noWrap sx={{ display: 'block', mt: 0.2, color: 'text.secondary' }}>
                 N° {row.documentNumber}
               </Typography>
-            )}
-            {row.paymentStatus === 'PARTIALLY_PAID' && (
-              <Chip
-                size='small'
-                color='info'
-                label='Pagado Parcial'
-                sx={{ height: 17, mt: 0.25, fontSize: '0.62rem', fontWeight: 700 }}
-              />
             )}
           </Box>
         ) : (
@@ -214,33 +205,19 @@ export const buildDocumentsColumns = (handlers: {
     },
     {
       field: 'totalAmount',
-      headerName: 'Importe / Saldo',
+      headerName: 'Importe',
       flex: 0.13,
-      minWidth: 145,
+      minWidth: 135,
       renderCell: ({ row }: { row: DocumentItem }) => {
         if (row.totalAmount === null || row.totalAmount === undefined) {
           return <Typography variant='body2' color='text.disabled'>—</Typography>
         }
         const curr = row.currency || '$'
-        const bal = row.balanceSummary
-        const imp = row.imputationSummary
 
         return (
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant='body2' noWrap sx={{ fontWeight: 700 }}>
-              {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </Typography>
-            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
-              <Typography variant='caption' color='info.main' noWrap display='block' sx={{ fontWeight: 600 }}>
-                Falta: {curr} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-              </Typography>
-            )}
-            {imp?.isPaymentSource && imp.unappliedAmount > 1 && (
-              <Typography variant='caption' color='warning.main' noWrap display='block' sx={{ fontWeight: 600 }}>
-                Sin imputar: {curr} {imp.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-              </Typography>
-            )}
-          </Box>
+          <Typography variant='body2' noWrap sx={{ fontWeight: 700 }}>
+            {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+          </Typography>
         )
       }
     },
@@ -262,10 +239,10 @@ export const buildDocumentsColumns = (handlers: {
               width: 32,
               height: 32,
               borderRadius: 1.25,
-              backgroundColor: 'error.light',
-              color: 'error.main',
+              backgroundColor: 'error.main',
+              color: 'common.white',
               '&:hover': {
-                backgroundColor: 'error.main',
+                backgroundColor: 'error.dark',
                 color: 'common.white'
               }
             }}
@@ -278,12 +255,16 @@ export const buildDocumentsColumns = (handlers: {
     {
       field: 'source',
       headerName: 'Origen',
-      flex: 0.13,
-      minWidth: 135,
+      flex: 0.15,
+      minWidth: 165,
       renderCell: ({ row }: { row: DocumentItem }) => {
         const warnings = Array.isArray(row.validationWarnings) ? row.validationWarnings : []
         const hasDuplicate = warnings.some(w => w.code === 'DUPLICATE_FISCAL')
         const warningsTooltip = warnings.map(w => `• ${w.message}`).join('\n')
+        const uploaderLabel = row.user
+          ? `${row.user.name || ''} ${row.user.lastName || ''}`.trim() ||
+            (row.user.username ? `@${row.user.username}` : row.user.email || `Usuario #${row.user.id}`)
+          : ''
 
         return (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 0, justifyContent: 'center' }}>
@@ -301,9 +282,19 @@ export const buildDocumentsColumns = (handlers: {
                 </Tooltip>
               )}
             </Box>
+            {uploaderLabel && (
+              <Tooltip title={`Originado por usuario: ${uploaderLabel}${row.user?.email ? ` (${row.user.email})` : ''}`}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 150 }}>
+                  <Icon icon='tabler:user' fontSize={13} />
+                  <Typography variant='caption' color='text.secondary' noWrap sx={{ fontSize: '0.68rem', fontWeight: 500 }}>
+                    {uploaderLabel}
+                  </Typography>
+                </Box>
+              </Tooltip>
+            )}
             {row.ftpDeviceName && (
               <Tooltip title={`Impresora / Escáner: ${row.ftpDeviceName}`}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 120 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.4, maxWidth: 150 }}>
                   <Icon icon='tabler:printer' fontSize={13} />
                   <Typography variant='caption' color='text.secondary' noWrap sx={{ fontSize: '0.68rem' }}>
                     {row.ftpDeviceName}
@@ -317,34 +308,31 @@ export const buildDocumentsColumns = (handlers: {
     },
 
     {
-      field: 'paymentStatus',
-      headerName: 'Pago / Vínculos',
-      flex: 0.14,
-      minWidth: 155,
+      field: 'validated',
+      headerName: 'Validado',
+      width: 95,
+      minWidth: 90,
+      align: 'center',
+      headerAlign: 'center',
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const payStatus = row.balanceSummary?.isTrackable
-          ? row.balanceSummary.derivedPaymentStatus
-          : row.paymentStatus || 'PENDING'
-        const linked = row.linkedCount ?? 0
+        const isHumanValidated =
+          row.status === 'VALIDATED' ||
+          (Boolean(row.validatedByUserId) && row.status !== 'REJECTED')
+
+        if (!isHumanValidated) {
+          return null
+        }
+
+        const validatedTooltip = row.validatedAt
+          ? `Validado por usuario el ${new Date(row.validatedAt).toLocaleString('es-AR')}`
+          : 'Validado por usuario'
 
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35, alignItems: 'flex-start' }}>
-            <Box
-              onClick={() => handlers.onPaymentStatus?.(row)}
-              sx={{ cursor: handlers.onPaymentStatus ? 'pointer' : 'default' }}
-            >
-              <StatusChip variantType='payment' status={payStatus} sx={{ height: 20, fontSize: '0.68rem' }} />
+          <Tooltip title={validatedTooltip}>
+            <Box sx={{ color: 'success.main', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon icon='akar-icons:circle-check-fill' fontSize={20} />
             </Box>
-            <Chip
-              size='small'
-              variant='outlined'
-              color={linked > 0 ? 'primary' : 'default'}
-              icon={<Icon icon={linked > 0 ? 'tabler:link' : 'tabler:link-off'} fontSize={12} />}
-              label={linked > 0 ? `${linked} vínculo${linked > 1 ? 's' : ''}` : 'Sin vincular'}
-              onClick={() => handlers.onValidate(row)}
-              sx={{ height: 18, fontSize: '0.62rem', cursor: 'pointer' }}
-            />
-          </Box>
+          </Tooltip>
         )
       }
     },

@@ -12,7 +12,6 @@ import ConfirmActionDialog from 'src/components/common/ConfirmActionDialog'
 import DocumentDropzone from 'src/components/documents/DocumentDropzone'
 import PdfViewerModal from 'src/components/documents/PdfViewerModal'
 import DocumentValidationModal from 'src/components/documents/DocumentValidationModal'
-import DocumentPaymentStatusModal from 'src/components/documents/DocumentPaymentStatusModal'
 import DocumentStatsHeader from './DocumentStatsHeader'
 import DocumentFilterToolbar from './DocumentFilterToolbar'
 import DocumentQuotaBanner from './DocumentQuotaBanner'
@@ -23,6 +22,7 @@ export const DocumentsListView = () => {
   const {
     data,
     facets,
+    uploaders,
     total,
     loading,
     uploading,
@@ -40,10 +40,10 @@ export const DocumentsListView = () => {
     setDateFrom,
     dateTo,
     setDateTo,
-    paymentFilter,
-    setPaymentFilter,
     source,
     setSource,
+    userIdFilter,
+    setUserIdFilter,
     clientIdFilter,
     clearClientFilter,
     page,
@@ -56,9 +56,6 @@ export const DocumentsListView = () => {
     setPreviewDoc,
     validatingDoc,
     setValidatingDoc,
-    paymentDoc,
-    setPaymentDoc,
-    updatingPayment,
     exportingFormat,
     docToDelete,
     setDocToDelete,
@@ -78,7 +75,6 @@ export const DocumentsListView = () => {
     handleBulkDeleteConfirm,
     handleValidate,
     handleReject,
-    handleUpdatePaymentStatus,
     handleExport
   } = useDocumentsManager()
 
@@ -87,10 +83,9 @@ export const DocumentsListView = () => {
       buildDocumentsColumns({
         onPreview: doc => setPreviewDoc(doc),
         onValidate: doc => setValidatingDoc(doc),
-        onDelete: doc => setDocToDelete(doc),
-        onPaymentStatus: doc => setPaymentDoc(doc)
+        onDelete: doc => setDocToDelete(doc)
       }),
-    [setDocToDelete, setPaymentDoc, setPreviewDoc, setValidatingDoc]
+    [setDocToDelete, setPreviewDoc, setValidatingDoc]
   )
 
   return (
@@ -138,18 +133,19 @@ export const DocumentsListView = () => {
             setPage(0)
             setSelectedRowIds([])
           }}
-          paymentFilter={paymentFilter}
-          onPaymentFilterChange={val => {
-            setPaymentFilter(val)
-            setPage(0)
-            setSelectedRowIds([])
-          }}
           source={source}
           onSourceChange={val => {
             setSource(val)
             setPage(0)
             setSelectedRowIds([])
           }}
+          userId={userIdFilter}
+          onUserIdChange={val => {
+            setUserIdFilter(val)
+            setPage(0)
+            setSelectedRowIds([])
+          }}
+          uploaders={uploaders}
           onResetFilters={handleResetFilters}
           hasActiveFilters={hasActiveFilters}
           onToggleUpload={() => setShowUpload(prev => !prev)}
@@ -277,15 +273,6 @@ export const DocumentsListView = () => {
         isValidating={validating}
         onReprocess={handleReprocess}
         reprocessing={Boolean(validatingDoc && reprocessingId === validatingDoc.id)}
-        onLinksUpdated={loadData}
-      />
-
-      <DocumentPaymentStatusModal
-        open={Boolean(paymentDoc)}
-        document={paymentDoc}
-        loading={updatingPayment}
-        onClose={() => setPaymentDoc(null)}
-        onSubmit={handleUpdatePaymentStatus}
       />
 
       {/* Diálogo de confirmación para eliminación individual */}

@@ -3,6 +3,7 @@ import apiConnector from 'src/services/api.service'
 import {
   CompanyEmailChannelItem,
   CompanyTelegramChannelItem,
+  CompanyUserChannelOverviewItem,
   CompanyWhatsappChannelItem,
   CompanyWhatsappConfigResponse,
   EmailMessageItem,
@@ -20,7 +21,15 @@ import {
   WhatsappRuntimeSnapshot
 } from 'src/types/apps/channelTypes'
 
+const withUserQuery = (base: string, userId?: number) => {
+  if (!userId) return base
+
+  return `${base}${base.includes('?') ? '&' : '?'}userId=${userId}`
+}
+
 export interface ChannelsState {
+  usersOverview: CompanyUserChannelOverviewItem[]
+  loadingUsersOverview: boolean
   emailChannel: CompanyEmailChannelItem | null
   emailConfigured: boolean
   emails: EmailMessageItem[]
@@ -64,6 +73,8 @@ export interface ChannelsState {
 }
 
 const initialState: ChannelsState = {
+  usersOverview: [],
+  loadingUsersOverview: false,
   emailChannel: null,
   emailConfigured: false,
   emails: [],
@@ -104,16 +115,29 @@ const initialState: ChannelsState = {
   loadingTelegramMessages: false
 }
 
-export const fetchEmailChannelConfig = createAsyncThunk('channels/fetchEmailConfig', async () => {
-  const res = await apiConnector.get('/channels/email')
+export const fetchUsersChannelsOverview = createAsyncThunk(
+  'channels/fetchUsersOverview',
+  async () => {
+    const res = await apiConnector.get('/channels/users-overview')
 
-  return res as { configured: boolean; channel: CompanyEmailChannelItem | null }
-})
+    return res as { isCompanyAdmin?: boolean; users: CompanyUserChannelOverviewItem[] }
+  }
+)
+
+export const fetchEmailChannelConfig = createAsyncThunk(
+  'channels/fetchEmailConfig',
+  async (targetUserId?: number) => {
+    const res = await apiConnector.get(withUserQuery('/channels/email', targetUserId))
+
+    return res as { configured: boolean; channel: CompanyEmailChannelItem | null }
+  }
+)
 
 export const saveEmailChannelConfig = createAsyncThunk(
   'channels/saveEmailConfig',
-  async (payload: UpsertEmailChannelPayload) => {
-    const res = await apiConnector.post('/channels/email', payload)
+  async (payload: UpsertEmailChannelPayload & { targetUserId?: number }) => {
+    const { targetUserId, ...body } = payload
+    const res = await apiConnector.post(withUserQuery('/channels/email', targetUserId), body)
 
     return res as { message: string; channel: CompanyEmailChannelItem }
   }
@@ -121,29 +145,36 @@ export const saveEmailChannelConfig = createAsyncThunk(
 
 export const testEmailChannelConnection = createAsyncThunk(
   'channels/testEmailConnection',
-  async (payload: TestEmailConnectionPayload) => {
-    const res = await apiConnector.post('/channels/email/test', payload)
+  async (payload: TestEmailConnectionPayload & { targetUserId?: number }) => {
+    const { targetUserId, ...body } = payload
+    const res = await apiConnector.post(withUserQuery('/channels/email/test', targetUserId), body)
 
     return res as { ok: boolean; message: string; totalMessages: number; unreadCount: number }
   }
 )
 
-export const syncEmailChannelNow = createAsyncThunk('channels/syncEmailNow', async () => {
-  const res = await apiConnector.post('/channels/email/sync', {})
+export const syncEmailChannelNow = createAsyncThunk(
+  'channels/syncEmailNow',
+  async (targetUserId?: number) => {
+    const res = await apiConnector.post(withUserQuery('/channels/email/sync', targetUserId), {})
 
-  return res as {
-    ok: boolean
-    processedEmails?: number
-    createdDocuments?: number
-    skippedCount?: number
-    message: string
+    return res as {
+      ok: boolean
+      processedEmails?: number
+      createdDocuments?: number
+      skippedCount?: number
+      message: string
+    }
   }
-})
+)
 
 export const regenerateEmailWebhookSecret = createAsyncThunk(
   'channels/regenerateEmailWebhookSecret',
-  async () => {
-    const res = await apiConnector.post('/channels/email/webhook-secret', {})
+  async (targetUserId?: number) => {
+    const res = await apiConnector.post(
+      withUserQuery('/channels/email/webhook-secret', targetUserId),
+      {}
+    )
 
     return res as { message: string; channel: CompanyEmailChannelItem }
   }
@@ -151,10 +182,17 @@ export const regenerateEmailWebhookSecret = createAsyncThunk(
 
 export const fetchEmailMessages = createAsyncThunk(
   'channels/fetchEmailMessages',
-  async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+  async (params?: {
+    search?: string
+    status?: string
+    userId?: number
+    page?: number
+    limit?: number
+  }) => {
     const query = new URLSearchParams()
     if (params?.search) query.set('search', params.search)
     if (params?.status) query.set('status', params.status)
+    if (params?.userId) query.set('userId', String(params.userId))
     if (params?.page) query.set('page', String(params.page))
     if (params?.limit) query.set('limit', String(params.limit))
 
@@ -195,23 +233,29 @@ export const rescueEmailToDocument = createAsyncThunk(
 
 export const fetchWhatsappChannelConfig = createAsyncThunk(
   'channels/fetchWhatsappConfig',
-  async () => {
-    const res = await apiConnector.get('/channels/whatsapp')
+  async (targetUserId?: number) => {
+    const res = await apiConnector.get(withUserQuery('/channels/whatsapp', targetUserId))
 
     return res as CompanyWhatsappConfigResponse
   }
 )
 
-export const connectWhatsappQr = createAsyncThunk('channels/connectWhatsappQr', async () => {
-  const res = await apiConnector.post('/channels/whatsapp/connect', {})
+export const connectWhatsappQr = createAsyncThunk(
+  'channels/connectWhatsappQr',
+  async (targetUserId?: number) => {
+    const res = await apiConnector.post(withUserQuery('/channels/whatsapp/connect', targetUserId), {})
 
-  return res as CompanyWhatsappConfigResponse & { message: string }
-})
+    return res as CompanyWhatsappConfigResponse & { message: string }
+  }
+)
 
 export const disconnectWhatsappSession = createAsyncThunk(
   'channels/disconnectWhatsappSession',
-  async () => {
-    const res = await apiConnector.post('/channels/whatsapp/disconnect', {})
+  async (targetUserId?: number) => {
+    const res = await apiConnector.post(
+      withUserQuery('/channels/whatsapp/disconnect', targetUserId),
+      {}
+    )
 
     return res as CompanyWhatsappConfigResponse & { message: string }
   }
@@ -219,25 +263,39 @@ export const disconnectWhatsappSession = createAsyncThunk(
 
 export const saveWhatsappChannelSettings = createAsyncThunk(
   'channels/saveWhatsappSettings',
-  async (payload: UpsertWhatsappChannelPayload) => {
-    const res = await apiConnector.patch('/channels/whatsapp/settings', payload)
+  async (payload: UpsertWhatsappChannelPayload & { targetUserId?: number }) => {
+    const { targetUserId, ...body } = payload
+    const res = await apiConnector.patch(
+      withUserQuery('/channels/whatsapp/settings', targetUserId),
+      body
+    )
 
     return res as CompanyWhatsappConfigResponse & { message: string }
   }
 )
 
-export const fetchWhatsappGroups = createAsyncThunk('channels/fetchWhatsappGroups', async () => {
-  const res = await apiConnector.get('/channels/whatsapp/groups')
+export const fetchWhatsappGroups = createAsyncThunk(
+  'channels/fetchWhatsappGroups',
+  async (targetUserId?: number) => {
+    const res = await apiConnector.get(withUserQuery('/channels/whatsapp/groups', targetUserId))
 
-  return res as { connected: boolean; groups: WhatsappGroupItem[] }
-})
+    return res as { connected: boolean; groups: WhatsappGroupItem[] }
+  }
+)
 
 export const fetchWhatsappMessages = createAsyncThunk(
   'channels/fetchWhatsappMessages',
-  async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+  async (params?: {
+    search?: string
+    status?: string
+    userId?: number
+    page?: number
+    limit?: number
+  }) => {
     const query = new URLSearchParams()
     if (params?.search) query.set('search', params.search)
     if (params?.status) query.set('status', params.status)
+    if (params?.userId) query.set('userId', String(params.userId))
     if (params?.page) query.set('page', String(params.page))
     if (params?.limit) query.set('limit', String(params.limit))
 
@@ -260,8 +318,8 @@ export const fetchWhatsappMessages = createAsyncThunk(
 
 export const fetchTelegramChannelConfig = createAsyncThunk(
   'channels/fetchTelegramConfig',
-  async () => {
-    const res = await apiConnector.get('/channels/telegram')
+  async (targetUserId?: number) => {
+    const res = await apiConnector.get(withUserQuery('/channels/telegram', targetUserId))
 
     return res as { configured: boolean; channel: CompanyTelegramChannelItem | null }
   }
@@ -269,8 +327,9 @@ export const fetchTelegramChannelConfig = createAsyncThunk(
 
 export const saveTelegramChannelConfig = createAsyncThunk(
   'channels/saveTelegramConfig',
-  async (payload: UpsertTelegramChannelPayload) => {
-    const res = await apiConnector.post('/channels/telegram', payload)
+  async (payload: UpsertTelegramChannelPayload & { targetUserId?: number }) => {
+    const { targetUserId, ...body } = payload
+    const res = await apiConnector.post(withUserQuery('/channels/telegram', targetUserId), body)
 
     return res as {
       message: string
@@ -282,8 +341,9 @@ export const saveTelegramChannelConfig = createAsyncThunk(
 
 export const testTelegramChannelConnection = createAsyncThunk(
   'channels/testTelegramConnection',
-  async (payload: TestTelegramConnectionPayload) => {
-    const res = await apiConnector.post('/channels/telegram/test', payload)
+  async (payload: TestTelegramConnectionPayload & { targetUserId?: number }) => {
+    const { targetUserId, ...body } = payload
+    const res = await apiConnector.post(withUserQuery('/channels/telegram/test', targetUserId), body)
 
     return res as {
       ok: boolean
@@ -297,10 +357,17 @@ export const testTelegramChannelConnection = createAsyncThunk(
 
 export const fetchTelegramMessages = createAsyncThunk(
   'channels/fetchTelegramMessages',
-  async (params?: { search?: string; status?: string; page?: number; limit?: number }) => {
+  async (params?: {
+    search?: string
+    status?: string
+    userId?: number
+    page?: number
+    limit?: number
+  }) => {
     const query = new URLSearchParams()
     if (params?.search) query.set('search', params.search)
     if (params?.status) query.set('status', params.status)
+    if (params?.userId) query.set('userId', String(params.userId))
     if (params?.page) query.set('page', String(params.page))
     if (params?.limit) query.set('limit', String(params.limit))
 
@@ -338,6 +405,16 @@ export const channelsSlice = createSlice({
   },
   extraReducers: builder => {
     builder
+      .addCase(fetchUsersChannelsOverview.pending, state => {
+        state.loadingUsersOverview = true
+      })
+      .addCase(fetchUsersChannelsOverview.fulfilled, (state, action) => {
+        state.loadingUsersOverview = false
+        state.usersOverview = action.payload?.users || []
+      })
+      .addCase(fetchUsersChannelsOverview.rejected, state => {
+        state.loadingUsersOverview = false
+      })
       .addCase(fetchEmailChannelConfig.pending, state => {
         state.loadingConfig = true
       })

@@ -60,7 +60,12 @@ const PROVIDER_PRESETS: Record<
   }
 }
 
-const EmailChannelTab: React.FC = () => {
+interface EmailChannelTabProps {
+  targetUserId?: number
+  readOnly?: boolean
+}
+
+const EmailChannelTab: React.FC<EmailChannelTabProps> = ({ targetUserId, readOnly = false }) => {
   const dispatch = useDispatch<AppDispatch>()
   const {
     emailChannel,
@@ -91,8 +96,8 @@ const EmailChannelTab: React.FC = () => {
   } | null>(null)
 
   useEffect(() => {
-    dispatch(fetchEmailChannelConfig())
-  }, [dispatch])
+    dispatch(fetchEmailChannelConfig(targetUserId))
+  }, [dispatch, targetUserId])
 
   useEffect(() => {
     if (emailChannel) {
@@ -108,8 +113,25 @@ const EmailChannelTab: React.FC = () => {
       setSyncIntervalMinutes(emailChannel.syncIntervalMinutes || 5)
       setSenderPolicy(emailChannel.senderPolicy || 'ALL')
       setAllowedSenders(Array.isArray(emailChannel.allowedSenders) ? emailChannel.allowedSenders : [])
+      setPassword('')
+      setTestFeedback(null)
+    } else {
+      setProvider('GMAIL')
+      setHost('imap.gmail.com')
+      setPort(993)
+      setSecure(true)
+      setEmailUser('')
+      setPassword('')
+      setFolder('INBOX')
+      setIsActive(true)
+      setProcessBodyWithoutAttachments(true)
+      setMarkAsRead(true)
+      setSyncIntervalMinutes(5)
+      setSenderPolicy('ALL')
+      setAllowedSenders([])
+      setTestFeedback(null)
     }
-  }, [emailChannel])
+  }, [emailChannel, targetUserId])
 
   const handleSelectProvider = (selected: EmailProviderType) => {
     setProvider(selected)
@@ -138,7 +160,7 @@ const EmailChannelTab: React.FC = () => {
 
   const handleRegenerateSecret = async () => {
     try {
-      await dispatch(regenerateEmailWebhookSecret()).unwrap()
+      await dispatch(regenerateEmailWebhookSecret(targetUserId)).unwrap()
       toast.success('Token del webhook regenerado correctamente')
     } catch (err: any) {
       toast.error(err?.message || 'Error al regenerar el token del webhook')
@@ -159,6 +181,7 @@ const EmailChannelTab: React.FC = () => {
     try {
       const result = await dispatch(
         testEmailChannelConnection({
+          targetUserId,
           host: host.trim(),
           port: Number(port) || 993,
           secure,
@@ -185,6 +208,7 @@ const EmailChannelTab: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (readOnly) return
     setTestFeedback(null)
 
     if (senderPolicy === 'WHITELIST' && allowedSenders.length === 0) {
@@ -196,6 +220,7 @@ const EmailChannelTab: React.FC = () => {
     try {
       await dispatch(
         saveEmailChannelConfig({
+          targetUserId,
           provider,
           host: host.trim(),
           port: Number(port) || 993,
@@ -221,12 +246,12 @@ const EmailChannelTab: React.FC = () => {
 
   const handleSyncNow = async () => {
     try {
-      const res = await dispatch(syncEmailChannelNow()).unwrap()
+      const res = await dispatch(syncEmailChannelNow(targetUserId)).unwrap()
       toast.success(res.message || 'Sincronización finalizada')
-      dispatch(fetchEmailChannelConfig())
+      dispatch(fetchEmailChannelConfig(targetUserId))
     } catch (err: any) {
       toast.error(err?.message || 'Error al sincronizar el buzón de correo')
-      dispatch(fetchEmailChannelConfig())
+      dispatch(fetchEmailChannelConfig(targetUserId))
     }
   }
 
@@ -547,7 +572,7 @@ const EmailChannelTab: React.FC = () => {
                     type='submit'
                     variant='contained'
                     color='primary'
-                    disabled={savingConfig || testingConnection}
+                    disabled={savingConfig || testingConnection || readOnly}
                     startIcon={
                       savingConfig ? (
                         <CircularProgress size={16} color='inherit' />

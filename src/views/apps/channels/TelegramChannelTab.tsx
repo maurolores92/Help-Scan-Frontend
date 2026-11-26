@@ -30,7 +30,15 @@ import {
 import { TelegramSenderPolicy } from 'src/types/apps/channelTypes'
 import TelegramSetupGuideModal from './TelegramSetupGuideModal'
 
-const TelegramChannelTab: React.FC = () => {
+interface TelegramChannelTabProps {
+  targetUserId?: number
+  readOnly?: boolean
+}
+
+const TelegramChannelTab: React.FC<TelegramChannelTabProps> = ({
+  targetUserId,
+  readOnly = false
+}) => {
   const dispatch = useDispatch<AppDispatch>()
   const {
     telegramChannel,
@@ -56,8 +64,8 @@ const TelegramChannelTab: React.FC = () => {
   } | null>(null)
 
   useEffect(() => {
-    dispatch(fetchTelegramChannelConfig())
-  }, [dispatch])
+    dispatch(fetchTelegramChannelConfig(targetUserId))
+  }, [dispatch, targetUserId])
 
   useEffect(() => {
     if (telegramChannel) {
@@ -69,8 +77,19 @@ const TelegramChannelTab: React.FC = () => {
       setIsActive(telegramChannel.isActive)
       setProcessImages(telegramChannel.processImages)
       setAutoReplyConfirmation(telegramChannel.autoReplyConfirmation)
+      setBotToken('')
+      setTestFeedback(null)
+    } else {
+      setBotToken('')
+      setSenderPolicy('ALL')
+      setAllowedChatIds([])
+      setIgnoreGroups(false)
+      setIsActive(true)
+      setProcessImages(true)
+      setAutoReplyConfirmation(true)
+      setTestFeedback(null)
     }
-  }, [telegramChannel])
+  }, [telegramChannel, targetUserId])
 
   const handleAddChatId = () => {
     const clean = chatIdInput.trim().replace(/^@/, '').toLowerCase()
@@ -95,6 +114,7 @@ const TelegramChannelTab: React.FC = () => {
     try {
       const res = await dispatch(
         testTelegramChannelConnection({
+          targetUserId,
           botToken: botToken.trim() || undefined
         })
       ).unwrap()
@@ -109,11 +129,13 @@ const TelegramChannelTab: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (readOnly) return
     setTestFeedback(null)
 
     try {
       await dispatch(
         saveTelegramChannelConfig({
+          targetUserId,
           botToken: botToken.trim() || undefined,
           senderPolicy,
           allowedChatIds,
@@ -400,7 +422,7 @@ const TelegramChannelTab: React.FC = () => {
                       type='button'
                       variant='outlined'
                       color='info'
-                      disabled={testingTelegramConnection || savingTelegramConfig}
+                      disabled={testingTelegramConnection || savingTelegramConfig || readOnly}
                       onClick={handleTestConnection}
                       startIcon={
                         testingTelegramConnection ? (
@@ -417,7 +439,7 @@ const TelegramChannelTab: React.FC = () => {
                       type='submit'
                       variant='contained'
                       color='primary'
-                      disabled={savingTelegramConfig || testingTelegramConnection}
+                      disabled={savingTelegramConfig || testingTelegramConnection || readOnly}
                       startIcon={
                         savingTelegramConfig ? (
                           <CircularProgress size={16} color='inherit' />

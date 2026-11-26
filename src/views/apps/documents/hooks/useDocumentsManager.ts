@@ -8,14 +8,13 @@ import {
   deleteMultipleDocuments,
   DocumentExportFormat,
   DocumentItem,
-  DocumentPaymentStatus,
   exportFilteredDocuments,
   fetchDocumentById,
   fetchDocumentFacets,
   fetchDocuments,
+  fetchDocumentUploaders,
   reprocessDocument,
   syncFtpDocuments,
-  updateDocumentPaymentStatus,
   uploadMultipleDocuments,
   validateDocument,
   rejectDocument,
@@ -31,6 +30,7 @@ export const useDocumentsManager = () => {
     facets,
     statusFacets,
     departmentFacets,
+    uploaders,
     total,
     loading,
     uploading,
@@ -50,8 +50,8 @@ export const useDocumentsManager = () => {
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
   const [status, setStatus] = useState('')
-  const [paymentFilter, setPaymentFilter] = useState('')
   const [source, setSource] = useState('')
+  const [userIdFilter, setUserIdFilter] = useState<number | ''>('')
   const [clientIdFilter, setClientIdFilter] = useState<number | undefined>(() => {
     const raw = Number(router.query.clientId)
 
@@ -63,8 +63,6 @@ export const useDocumentsManager = () => {
 
   const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null)
   const [validatingDoc, setValidatingDoc] = useState<DocumentItem | null>(null)
-  const [paymentDoc, setPaymentDoc] = useState<DocumentItem | null>(null)
-  const [updatingPayment, setUpdatingPayment] = useState(false)
   const [exportingFormat, setExportingFormat] = useState<DocumentExportFormat | null>(null)
   const [docToDelete, setDocToDelete] = useState<DocumentItem | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -93,10 +91,9 @@ export const useDocumentsManager = () => {
     return () => clearTimeout(timer)
   }, [searchInput])
 
-  const resolvedPaymentParams =
-    paymentFilter === 'OVERDUE' || paymentFilter === 'DUE_SOON'
-      ? { paymentStatus: '', dueFilter: paymentFilter }
-      : { paymentStatus: paymentFilter, dueFilter: '' }
+  useEffect(() => {
+    dispatch(fetchDocumentUploaders())
+  }, [dispatch])
 
   const loadData = useCallback(() => {
     dispatch(
@@ -109,9 +106,8 @@ export const useDocumentsManager = () => {
         dateFrom,
         dateTo,
         status,
-        paymentStatus: resolvedPaymentParams.paymentStatus,
-        dueFilter: resolvedPaymentParams.dueFilter,
         source,
+        userId: userIdFilter || undefined,
         clientId: clientIdFilter
       })
     )
@@ -127,9 +123,8 @@ export const useDocumentsManager = () => {
     dateFrom,
     dateTo,
     status,
-    resolvedPaymentParams.paymentStatus,
-    resolvedPaymentParams.dueFilter,
     source,
+    userIdFilter,
     clientIdFilter
   ])
 
@@ -211,29 +206,11 @@ export const useDocumentsManager = () => {
     setDateFrom('')
     setDateTo('')
     setStatus('')
-    setPaymentFilter('')
     setSource('')
+    setUserIdFilter('')
     clearClientFilter()
     setPage(0)
     setSelectedRowIds([])
-  }
-
-  const handleUpdatePaymentStatus = async (payload: {
-    id: number
-    paymentStatus: DocumentPaymentStatus
-    paidAt?: string | null
-    paymentReference?: string | null
-  }) => {
-    try {
-      setUpdatingPayment(true)
-      await dispatch(updateDocumentPaymentStatus(payload)).unwrap()
-      toast.success('Estado de pago actualizado')
-      setPaymentDoc(null)
-    } catch (err: any) {
-      toast.error(err?.message || 'Error al actualizar estado de pago')
-    } finally {
-      setUpdatingPayment(false)
-    }
   }
 
   const handleExport = async (format: DocumentExportFormat) => {
@@ -247,9 +224,8 @@ export const useDocumentsManager = () => {
         dateFrom,
         dateTo,
         status,
-        paymentStatus: resolvedPaymentParams.paymentStatus,
-        dueFilter: resolvedPaymentParams.dueFilter,
         source,
+        userId: userIdFilter || undefined,
         clientId: clientIdFilter,
         ids: selectedRowIds.length > 0 ? selectedRowIds : undefined
       })
@@ -403,7 +379,14 @@ export const useDocumentsManager = () => {
   }
 
   const hasActiveFilters = Boolean(
-    searchInput || documentType || purchaseOrderNumber || dateFrom || dateTo || source || paymentFilter || clientIdFilter
+    searchInput ||
+      documentType ||
+      purchaseOrderNumber ||
+      dateFrom ||
+      dateTo ||
+      source ||
+      userIdFilter ||
+      clientIdFilter
   )
 
   return {
@@ -411,6 +394,7 @@ export const useDocumentsManager = () => {
     facets,
     statusFacets,
     departmentFacets,
+    uploaders,
     total,
     loading,
     uploading,
@@ -430,10 +414,10 @@ export const useDocumentsManager = () => {
     setDateTo,
     status,
     setStatus,
-    paymentFilter,
-    setPaymentFilter,
     source,
     setSource,
+    userIdFilter,
+    setUserIdFilter,
     clientIdFilter,
     clearClientFilter,
     page,
@@ -446,9 +430,6 @@ export const useDocumentsManager = () => {
     setPreviewDoc,
     validatingDoc,
     setValidatingDoc,
-    paymentDoc,
-    setPaymentDoc,
-    updatingPayment,
     exportingFormat,
     docToDelete,
     setDocToDelete,
@@ -468,7 +449,6 @@ export const useDocumentsManager = () => {
     handleBulkDeleteConfirm,
     handleValidate,
     handleReject,
-    handleUpdatePaymentStatus,
     handleExport
   }
 }
