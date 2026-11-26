@@ -1,6 +1,7 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import { getApiBaseUrl } from 'src/utils/api-url';
+import { reportClientError } from 'src/utils/security-error-reporter';
 
 const repository = axios.create({
   baseURL: getApiBaseUrl(),
@@ -46,7 +47,25 @@ repository.interceptors.response.use(
   function (error) {
     const status = error.response?.status;
     const message = String(error.response?.data?.message || '');
+    const errorCode = error.response?.data?.code ? String(error.response.data.code) : undefined;
     const requestUrl = String(error.config?.url || '');
+    const requestMethod = String(error.config?.method || 'GET').toUpperCase();
+
+    if (
+      typeof window !== 'undefined' &&
+      !requestUrl.includes('/security/client-errors') &&
+      errorCode !== 'ACTIVE_SESSION_EXISTS' &&
+      (!status || status >= 400)
+    ) {
+      reportClientError({
+        statusCode: typeof status === 'number' ? status : 0,
+        method: requestMethod,
+        path: requestUrl || window.location.pathname,
+        frontendRoute: window.location.pathname,
+        errorCode: errorCode || error.code || undefined,
+        message: message || error.message || 'Error de comunicación con la API',
+      });
+    }
 
     if (
       typeof window !== 'undefined' &&

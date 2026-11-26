@@ -15,7 +15,7 @@ export type ACLObj = {
  * Subjects exclusivos del Super Administrador de la plataforma.
  * Ningún usuario ni administrador de compañía puede acceder a sus páginas ni administrar estos módulos.
  */
-const PLATFORM_ONLY_SUBJECTS = ['companies', 'plans', 'permissions', 'notifications', 'demos']
+const PLATFORM_ONLY_SUBJECTS = ['companies', 'plans', 'permissions', 'notifications', 'demos', 'security']
 
 /**
  * Subjects operativos exclusivos de las Compañías (Tenants).
@@ -53,7 +53,8 @@ const isPlatformOnlyPermission = (upperPerm: string): boolean => {
     upperPerm.includes('_PLAN') ||
     upperPerm.includes('PERMISSION') ||
     upperPerm.includes('NOTIFICATION') ||
-    upperPerm.includes('DEMO')
+    upperPerm.includes('DEMO') ||
+    upperPerm.includes('SECURITY')
   )
 }
 
@@ -77,6 +78,7 @@ const defineRulesFor = (
     can('manage', 'permissions')
     can('manage', 'notifications')
     can('manage', 'demos')
+    can('manage', 'security')
     can('read', 'audits')
     can('manage', 'audits')
     can('read', 'myprofile')

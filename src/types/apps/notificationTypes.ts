@@ -52,6 +52,18 @@ export const NOTIFICATION_CATEGORIES: NotificationCategoryMeta[] = [
         description: 'Cuando se inicia sesión desde un dispositivo o IP no reconocida',
         emoji: '🛡️',
       },
+      {
+        key: 'security.threat_detected',
+        label: 'Amenaza o fuerza bruta detectada',
+        description: 'Múltiples intentos fallidos de inicio de sesión desde una misma IP',
+        emoji: '🚨',
+      },
+      {
+        key: 'security.ip_blocked',
+        label: 'IP bloqueada o desbloqueada',
+        description: 'Cuando un Super Admin bloquea o habilita una dirección IP sospechosa',
+        emoji: '⛔',
+      },
     ],
   },
   {

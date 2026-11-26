@@ -8,6 +8,7 @@ import { io, Socket } from 'socket.io-client'
 import { useDispatch } from 'react-redux'
 import { AppDispatch } from 'src/store'
 import { addNotification, fetchUnreadCount } from 'src/store/apps/notifications'
+import { pushLiveSecurityEvent } from 'src/store/apps/security'
 import toast from 'react-hot-toast'
 
 // ** Auth
@@ -161,6 +162,12 @@ export const NotificationProvider = ({ children }: Props) => {
     socket.on('disconnect', () => {
       console.log('[WS] Disconnected from /notifications')
       setConnected(false)
+    })
+
+    socket.on('security:event', (event: any) => {
+      if (user?.role === 'superadmin' && event) {
+        dispatch(pushLiveSecurityEvent(event))
+      }
     })
 
     socket.on('connect_error', (err: any) => {

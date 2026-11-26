@@ -117,6 +117,13 @@ const navigation = (): VerticalNavItemsType => {
       action: 'manage',
       subject: 'notifications'
     },
+    {
+      title: 'Seguridad y Monitoreo',
+      icon: 'tabler:shield-check',
+      path: '/security',
+      action: 'manage',
+      subject: 'security'
+    },
 
     // ==========================================
     // 4. ADMINISTRACIÓN DE COMPAÑÍA & AUDITORÍA

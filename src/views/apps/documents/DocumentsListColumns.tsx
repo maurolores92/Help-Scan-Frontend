@@ -43,6 +43,27 @@ export const buildDocumentsColumns = (handlers: {
   onPaymentStatus?: (doc: DocumentItem) => void
 }): GridColDef[] => [
     {
+      field: 'documentDate',
+      headerName: 'Fecha',
+      flex: 0.1,
+      minWidth: 110,
+      renderCell: ({ row }: { row: DocumentItem }) => {
+        const dateStr = row.documentDate
+          ? row.documentDate
+          : new Date(row.createdAt).toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+          })
+
+        return (
+          <Typography variant='body2' noWrap sx={{ color: 'text.primary' }}>
+            {dateStr}
+          </Typography>
+        )
+      }
+    },
+    {
       field: 'documentType',
       headerName: 'Tipo',
       flex: 0.14,
@@ -192,26 +213,38 @@ export const buildDocumentsColumns = (handlers: {
       }
     },
     {
-      field: 'documentDate',
-      headerName: 'Fecha',
-      flex: 0.1,
-      minWidth: 110,
+      field: 'totalAmount',
+      headerName: 'Importe / Saldo',
+      flex: 0.13,
+      minWidth: 145,
       renderCell: ({ row }: { row: DocumentItem }) => {
-        const dateStr = row.documentDate
-          ? row.documentDate
-          : new Date(row.createdAt).toLocaleDateString('es-ES', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-          })
+        if (row.totalAmount === null || row.totalAmount === undefined) {
+          return <Typography variant='body2' color='text.disabled'>—</Typography>
+        }
+        const curr = row.currency || '$'
+        const bal = row.balanceSummary
+        const imp = row.imputationSummary
 
         return (
-          <Typography variant='body2' noWrap sx={{ color: 'text.primary' }}>
-            {dateStr}
-          </Typography>
+          <Box sx={{ overflow: 'hidden' }}>
+            <Typography variant='body2' noWrap sx={{ fontWeight: 700 }}>
+              {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            </Typography>
+            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
+              <Typography variant='caption' color='info.main' noWrap display='block' sx={{ fontWeight: 600 }}>
+                Falta: {curr} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+            {imp?.isPaymentSource && imp.unappliedAmount > 1 && (
+              <Typography variant='caption' color='warning.main' noWrap display='block' sx={{ fontWeight: 600 }}>
+                Sin imputar: {curr} {imp.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              </Typography>
+            )}
+          </Box>
         )
       }
     },
+
     {
       field: 'originalName',
       headerName: 'PDF',
@@ -282,38 +315,7 @@ export const buildDocumentsColumns = (handlers: {
         )
       }
     },
-    {
-      field: 'totalAmount',
-      headerName: 'Importe / Saldo',
-      flex: 0.13,
-      minWidth: 145,
-      renderCell: ({ row }: { row: DocumentItem }) => {
-        if (row.totalAmount === null || row.totalAmount === undefined) {
-          return <Typography variant='body2' color='text.disabled'>—</Typography>
-        }
-        const curr = row.currency || '$'
-        const bal = row.balanceSummary
-        const imp = row.imputationSummary
 
-        return (
-          <Box sx={{ overflow: 'hidden' }}>
-            <Typography variant='body2' noWrap sx={{ fontWeight: 700 }}>
-              {curr} {Number(row.totalAmount).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            </Typography>
-            {bal?.isTrackable && bal.paidAmount > 0 && bal.remainingBalance > 0 && (
-              <Typography variant='caption' color='info.main' noWrap display='block' sx={{ fontWeight: 600 }}>
-                Falta: {curr} {bal.remainingBalance.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-              </Typography>
-            )}
-            {imp?.isPaymentSource && imp.unappliedAmount > 1 && (
-              <Typography variant='caption' color='warning.main' noWrap display='block' sx={{ fontWeight: 600 }}>
-                Sin imputar: {curr} {imp.unappliedAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-              </Typography>
-            )}
-          </Box>
-        )
-      }
-    },
     {
       field: 'paymentStatus',
       headerName: 'Pago / Vínculos',

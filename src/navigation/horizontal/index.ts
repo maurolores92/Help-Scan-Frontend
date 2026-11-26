@@ -100,6 +100,13 @@ const navigation = (): HorizontalNavItemsType => {
           path: '/audit',
           action: 'manage',
           subject: 'companies'
+        },
+        {
+          title: 'Seguridad y Monitoreo',
+          icon: 'tabler:shield-check',
+          path: '/security',
+          action: 'manage',
+          subject: 'security'
         }
       ]
     },

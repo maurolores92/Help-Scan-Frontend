@@ -12,6 +12,7 @@ import plans from 'src/store/apps/plans'
 import channels from 'src/store/apps/channels'
 import clients from 'src/store/apps/clients'
 import demoRequests from 'src/store/apps/demoRequests'
+import security from 'src/store/apps/security'
 
 export const store = configureStore({
   reducer: {
@@ -24,7 +25,8 @@ export const store = configureStore({
     plans,
     channels,
     clients,
-    demoRequests
+    demoRequests,
+    security
   },
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({

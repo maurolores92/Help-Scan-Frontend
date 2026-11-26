@@ -34,6 +34,8 @@ import ThemeComponent from 'src/@core/theme/ThemeComponent'
 import AuthGuard from 'src/@core/components/auth/AuthGuard'
 import GuestGuard from 'src/@core/components/auth/GuestGuard'
 import OfflineDetector from 'src/components/OfflineDetector'
+import SecurityErrorBoundary from 'src/components/SecurityErrorBoundary'
+import { reportClientError } from 'src/utils/security-error-reporter'
 
 // ** Spinner Import
 import Spinner from 'src/@core/components/spinner'
@@ -141,8 +143,47 @@ const App = (props: ExtendedAppProps) => {
     }
   }, [])
 
+  // Captura global de errores JS y promesas rechazadas no controladas en frontend
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleWindowError = (event: ErrorEvent) => {
+      reportClientError({
+        statusCode: 500,
+        method: 'WINDOW_ERROR',
+        path: window.location.pathname,
+        frontendRoute: window.location.pathname,
+        errorCode: event.error?.name || 'JS_RUNTIME_ERROR',
+        message: event.message || 'Error JavaScript no controlado',
+        stackTrace: event.error?.stack || `${event.filename || ''}:${event.lineno}:${event.colno}`,
+      })
+    }
+
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason
+      reportClientError({
+        statusCode: 500,
+        method: 'UNHANDLED_REJECTION',
+        path: window.location.pathname,
+        frontendRoute: window.location.pathname,
+        errorCode: reason?.name || 'UNHANDLED_PROMISE_REJECTION',
+        message: reason?.message || (typeof reason === 'string' ? reason : 'Promesa rechazada sin capturar'),
+        stackTrace: reason?.stack || undefined,
+      })
+    }
+
+    window.addEventListener('error', handleWindowError)
+    window.addEventListener('unhandledrejection', handleUnhandledRejection)
+
+    return () => {
+      window.removeEventListener('error', handleWindowError)
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+    }
+  }, [])
+
   return (
-    <Provider store={store}>
+    <SecurityErrorBoundary>
+      <Provider store={store}>
       <CacheProvider value={emotionCache}>
         <Head>
           <title>{`${themeConfig.templateName} - Gestión Documental & Extracción OCR`}</title>
@@ -178,7 +219,8 @@ const App = (props: ExtendedAppProps) => {
           </NotificationProvider>
         </AuthProvider>
       </CacheProvider>
-    </Provider>
+      </Provider>
+    </SecurityErrorBoundary>
   )
 }
 
