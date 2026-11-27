@@ -82,6 +82,8 @@ const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
   const [allowedGroups, setAllowedGroups] = useState<AllowedWhatsappGroup[]>([])
   const [isActive, setIsActive] = useState(true)
   const [processImages, setProcessImages] = useState(true)
+  const [notifyOnReceive, setNotifyOnReceive] = useState(false)
+  const [notifyOnIndexed, setNotifyOnIndexed] = useState(false)
 
   useEffect(() => {
     dispatch(fetchWhatsappChannelConfig(targetUserId))
@@ -97,6 +99,8 @@ const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
       setAllowedGroups(Array.isArray(whatsappChannel.allowedGroups) ? whatsappChannel.allowedGroups : [])
       setIsActive(whatsappChannel.isActive)
       setProcessImages(whatsappChannel.processImages)
+      setNotifyOnReceive(Boolean(whatsappChannel.notifyOnReceive))
+      setNotifyOnIndexed(Boolean(whatsappChannel.notifyOnIndexed))
     } else {
       setSenderPolicy('ALL')
       setAllowedPhones([])
@@ -104,6 +108,8 @@ const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
       setAllowedGroups([])
       setIsActive(true)
       setProcessImages(true)
+      setNotifyOnReceive(false)
+      setNotifyOnIndexed(false)
     }
   }, [whatsappChannel, targetUserId])
 
@@ -207,7 +213,9 @@ const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
           allowedGroups,
           isActive,
           processImages,
-          autoReplyConfirmation: false
+          notifyOnReceive,
+          notifyOnIndexed,
+          autoReplyConfirmation: notifyOnReceive || notifyOnIndexed
         })
       ).unwrap()
       toast.success('Preferencias de WhatsApp guardadas')
@@ -581,8 +589,46 @@ const WhatsappChannelTab: React.FC<WhatsappChannelTabProps> = ({
                 </Grid>
 
                 <Grid item xs={12}>
+                  <Divider />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <Typography variant='subtitle2' sx={{ fontWeight: 600, mb: 1 }}>
+                    Notificaciones automáticas por WhatsApp
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={notifyOnReceive}
+                          onChange={e => setNotifyOnReceive(e.target.checked)}
+                        />
+                      }
+                      label='Notificar al recibir un documento ("📥 Documento recibido en HelpScan")'
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={notifyOnIndexed}
+                          onChange={e => setNotifyOnIndexed(e.target.checked)}
+                        />
+                      }
+                      label='Notificar al indexar un documento ("✅ Documento indexado en HelpScan")'
+                    />
+                  </Box>
+                </Grid>
+
+                <Grid item xs={12}>
                   <Alert severity='info'>
-                    <strong>Recepción interna silenciosa:</strong> Solo se obtienen y procesan mensajes que incluyen archivos adjuntos (PDF o imágenes). No se envían respuestas salientes por WhatsApp.
+                    {notifyOnReceive || notifyOnIndexed ? (
+                      <>
+                        <strong>Respuestas automáticas activas:</strong> Al recibir y/o indexar un archivo desde un chat o grupo autorizado, HelpScan enviará una notificación breve al mismo chat de origen.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Recepción interna silenciosa:</strong> Solo se procesan mensajes con archivos adjuntos (PDF o imágenes) sin enviar mensajes salientes por WhatsApp.
+                      </>
+                    )}
                   </Alert>
                 </Grid>
 

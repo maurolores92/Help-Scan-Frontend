@@ -180,6 +180,8 @@ export interface CompanyWhatsappChannelItem {
   isActive: boolean
   processImages: boolean
   autoReplyConfirmation: boolean
+  notifyOnReceive?: boolean
+  notifyOnIndexed?: boolean
   lastQrAt: string | null
   lastMessageAt: string | null
   lastSyncStatus: WhatsappSyncStatus
@@ -214,6 +216,8 @@ export interface UpsertWhatsappChannelPayload {
   isActive: boolean
   processImages: boolean
   autoReplyConfirmation: boolean
+  notifyOnReceive?: boolean
+  notifyOnIndexed?: boolean
 }
 
 export interface WhatsappMessageItem {
@@ -286,6 +290,8 @@ export interface UpsertTelegramChannelPayload {
   isActive: boolean
   processImages: boolean
   autoReplyConfirmation: boolean
+  notifyOnReceive?: boolean
+  notifyOnIndexed?: boolean
 }
 
 export interface TestTelegramConnectionPayload {
